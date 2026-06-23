@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Inventory</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0b0c;
+    --surface: #151516;
+    --surface2: #202124;
+    --border: #34363a;
+    --accent: #9ca3af;
+    --accent-dim: rgba(156,163,175,0.16);
+    --text: #f1f1f2;
+    --text-muted: #a1a1aa;
+    --text-dim: #6b7280;
+    --green: #c7c7c7;
+    --danger: #a1a1aa;
+    --blue: #b8bcc4;
+    --yellow: #a8a8a8;
+    --sidebar-w: 220px;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── HAMBURGER OVERLAY ── */
+  .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 90; }
+  .sidebar-overlay.open { display: block; }
+
+  /* ── SIDEBAR ── */
+  .sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; transform: translateX(-100%); transition: transform 0.25s cubic-bezier(.4,0,.2,1); }
+  .sidebar.open { transform: translateX(0); }
+  .logo { display: flex; align-items: center; gap: 10px; padding: 20px 18px; border-bottom: 1px solid var(--border); }
+  .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #111; }
+  .logo span { font-weight: 700; font-size: 18px; letter-spacing: -0.3px; }
+  .nav { padding: 12px 10px; flex: 1; overflow-y: auto; }
+  .nav-section-label { font-size: 10px; font-weight: 600; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 8px 4px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; color: var(--text-muted); font-weight: 500; transition: all 0.15s; text-decoration: none; position: relative; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(156,163,175,0.16); color: var(--accent); }
+  .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+  .nav-sub { padding-left: 36px; }
+  .nav-sub .nav-item { font-size: 13px; }
+  .nav-sub .nav-item::before { content: '·'; position: absolute; left: 20px; color: var(--text-dim); }
+  .nav-expand { margin-left: auto; transition: transform 0.2s; }
+  .nav-expand.open { transform: rotate(180deg); }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .topbar { height: 52px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 12px; background: var(--surface); position: sticky; top: 0; z-index: 50; }
+  .hamburger-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); flex-shrink: 0; transition: all 0.15s; }
+  .hamburger-btn:hover { color: var(--text); background: #28282d; }
+  .hamburger-btn svg { width: 18px; height: 18px; }
+  .breadcrumb { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 13px; }
+  .breadcrumb .sep { color: var(--text-dim); }
+  .breadcrumb .current { color: var(--text); font-weight: 500; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .avatar { width: 30px; height: 30px; background: var(--accent); color: #111; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
+  .content { padding: 28px; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+  .page-title h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .page-title p { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+  .page-actions { display: flex; gap: 10px; }
+
+  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; font-family: inherit; }
+  .btn svg { width: 15px; height: 15px; }
+  .btn-primary { background: var(--accent); color: #111; }
+  .btn-primary:hover { background: #d1d5db; }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: #28282d; }
+  .btn-danger { background: rgba(161,161,170,0.14); color: var(--danger); border: 1px solid rgba(161,161,170,0.24); }
+  .btn-danger:hover { background: rgba(161,161,170,0.24); }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .kpi-label { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .kpi-value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+  .kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .kpi-badge { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px; }
+  .badge-green { background: rgba(199,199,199,0.14); color: var(--green); }
+  .badge-accent { background: var(--accent-dim); color: var(--accent); }
+
+  /* ── ALERT ── */
+  .alert { background: rgba(161,161,170,0.10); border: 1px solid rgba(161,161,170,0.26); border-radius: 10px; padding: 14px 18px; display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; font-size: 13px; }
+  .alert svg { width: 17px; height: 17px; color: var(--danger); flex-shrink: 0; margin-top: 1px; }
+  .alert strong { color: var(--danger); font-weight: 600; display: block; margin-bottom: 2px; }
+  .alert span { color: var(--text-muted); }
+
+  /* ── TOOLBAR ── */
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+  .search-box { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+  .search-box svg { width: 15px; height: 15px; color: var(--text-dim); flex-shrink: 0; }
+  .search-box input { background: none; border: none; outline: none; color: var(--text); font-family: inherit; font-size: 13px; width: 100%; }
+  .search-box input::placeholder { color: var(--text-dim); }
+  .select-filter { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-family: inherit; font-size: 13px; cursor: pointer; outline: none; }
+
+  /* ── TABLE GERAL ── */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
+  .table-head { display: grid; grid-template-columns: 32px 1fr 110px 140px 110px 170px 80px; padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; min-width: 800px; align-items: center; }
+  .table-row { display: grid; grid-template-columns: 32px 1fr 110px 140px 110px 170px 80px; padding: 14px 20px; border-bottom: 1px solid var(--border); align-items: center; transition: background 0.12s; min-width: 800px; }
+  .table-row:last-child { border-bottom: none; }
+  .table-row:hover { background: rgba(255,255,255,0.02); }
+
+  /* ── TABLE COMPRAS ── */
+  .table-head-compras { display: grid; grid-template-columns: 120px minmax(130px,1fr) 90px 60px 90px 100px 140px 90px 80px 80px 70px; column-gap: 12px; padding: 12px 22px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; min-width: 1400px; align-items: center; }
+  .table-row-compras { display: grid; grid-template-columns: 120px minmax(130px,1fr) 90px 60px 90px 100px 140px 90px 80px 80px 70px; column-gap: 12px; padding: 14px 22px; border-bottom: 1px solid var(--border); align-items: center; transition: background 0.12s; min-width: 1400px; }
+  .table-row-compras:last-child { border-bottom: none; }
+  .table-row-compras:hover { background: rgba(255,255,255,0.02); }
+  .table-head-compras > div, .table-row-compras > div { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .table-row-compras .link-styled { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+
+  /* ── TABLE FINANCEIRO ── */
+  .table-head-financeiro { display: grid; grid-template-columns: 1fr 120px 110px 120px 120px 120px 70px; column-gap: 14px; padding: 12px 22px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; min-width: 900px; align-items: center; }
+  .table-row-financeiro { display: grid; grid-template-columns: 1fr 120px 110px 120px 120px 120px 70px; column-gap: 14px; padding: 14px 22px; border-bottom: 1px solid var(--border); align-items: center; transition: background 0.12s; min-width: 900px; }
+  .table-row-financeiro:last-child { border-bottom: none; }
+  .table-row-financeiro:hover { background: rgba(255,255,255,0.02); }
+
+  .link-styled { color: var(--blue); text-decoration: none; font-weight: 500; }
+  .link-styled:hover { text-decoration: underline; }
+
+  .product-cell { display: flex; align-items: center; gap: 12px; }
+  .product-img { width: 40px; height: 40px; background: var(--surface2); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border: 1px solid var(--border); }
+  .product-name { font-weight: 500; font-size: 13px; line-height: 1.35; }
+  .product-sku { font-size: 11px; color: var(--text-dim); background: var(--surface2); padding: 2px 7px; border-radius: 4px; margin-top: 3px; display: inline-block; font-family: monospace; }
+  .stock-val { font-weight: 600; font-size: 15px; }
+  .stock-zero { color: var(--danger); }
+  .stock-low { color: var(--yellow); }
+  .stock-ok { color: var(--green); }
+  .stock-unit { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+  .cell-muted { color: var(--text-muted); font-size: 13px; }
+
+  .actions-cell { display: flex; gap: 6px; }
+  .icon-btn { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); transition: all 0.13s; }
+  .icon-btn:hover { background: var(--surface); }
+  .icon-btn svg { width: 14px; height: 14px; }
+
+  /* ── SUB-TABS (Compras / Financeiro) ── */
+  .sub-tabs { display: flex; gap: 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 4px; margin-bottom: 24px; width: fit-content; }
+  .sub-tab { padding: 8px 18px; border-radius: 7px; border: none; background: transparent; color: var(--text-muted); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .sub-tab.active { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+
+  /* ── MODAL ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; width: 480px; max-width: 95vw; padding: 28px; transform: translateY(12px); transition: transform 0.2s; max-height: 90vh; overflow-y: auto; }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+  .modal-header h2 { font-size: 18px; font-weight: 700; }
+  .modal-header p { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+  .close-btn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); flex-shrink: 0; }
+  .close-btn:hover { color: var(--text); }
+  .close-btn svg { width: 15px; height: 15px; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: block; }
+  .form-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 13px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.15s; }
+  .form-input:disabled { opacity: 0.6; cursor: not-allowed; }
+  .form-input:focus { border-color: var(--accent); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-prefix { display: flex; align-items: center; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; transition: border-color 0.15s; }
+  .form-prefix:focus-within { border-color: var(--accent); }
+  .form-prefix span { padding: 10px 12px; color: var(--text-muted); font-size: 13px; border-right: 1px solid var(--border); background: rgba(255,255,255,0.03); }
+  .form-prefix input { border: none; background: none; padding: 10px 13px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; width: 100%; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
+
+  /* ── PÁGINAS ── */
+  #page-dashboard, #page-estoque, #page-produto-detalhe, #page-compras { display: none; }
+  #page-dashboard.active, #page-estoque.active, #page-produto-detalhe.active, #page-compras.active { display: block; }
+  #subpage-compras, #subpage-financeiro { display: none; }
+  #subpage-compras.active, #subpage-financeiro.active { display: block; }
+
+  .dash-kpi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+  .dash-kpi .kpi-card .kpi-value { font-size: 28px; }
+  .recent-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .recent-title svg { width: 17px; height: 17px; color: var(--accent); }
+  .mov-item { display: flex; align-items: center; gap: 14px; padding: 13px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 6px; }
+  .mov-badge { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .mov-badge.in { background: rgba(199,199,199,0.14); }
+  .mov-badge.out { background: rgba(161,161,170,0.12); }
+  .mov-info { flex: 1; }
+  .mov-name { font-size: 13px; font-weight: 500; }
+  .mov-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .mov-qty { font-weight: 700; font-size: 15px; }
+  .mov-qty.in { color: var(--green); }
+  .mov-qty.out { color: var(--danger); }
+  .mov-date { font-size: 12px; color: var(--text-dim); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+  .empty-state svg { width: 48px; height: 48px; margin-bottom: 14px; opacity: 0.3; }
+  .empty-state p { font-size: 14px; }
+
+  input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .tag { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 5px; font-size: 11px; font-weight: 500; }
+
+  /* ── CADASTRO DE PRODUTO ── */
+  .checkbox-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .check-card { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface2); cursor: pointer; transition: all 0.15s; }
+  .check-card:hover { border-color: var(--accent); }
+  .check-card.selected { border-color: var(--accent); background: rgba(156,163,175,0.16); }
+  .check-card input { accent-color: var(--accent); margin-top: 2px; }
+  .check-card strong { display: block; font-size: 14px; }
+  .check-card span { display: block; color: var(--text-muted); font-size: 12px; margin-top: 3px; line-height: 1.4; }
+
+  .product-link { display: inline; padding: 0; border: none; background: transparent; color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; line-height: 1.35; cursor: pointer; text-align: left; }
+  .product-link:hover { color: var(--accent); text-decoration: underline; }
+  .mini-view-btn { padding: 6px 10px; border-radius: 7px; border: 1px solid var(--accent); background: rgba(156,163,175,0.16); color: var(--accent); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .mini-view-btn:hover { background: var(--accent); color: #111; }
+
+  /* ── DETALHE DO PRODUTO ── */
+  .back-link { display: inline-flex; align-items: center; gap: 6px; border: none; background: transparent; color: var(--text-muted); font-family: inherit; font-size: 13px; cursor: pointer; margin-bottom: 18px; }
+  .back-link:hover { color: var(--text); }
+  .product-detail-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+  .product-detail-main { display: flex; align-items: flex-start; gap: 16px; min-width: 0; }
+  .detail-product-img { width: 64px; height: 64px; border-radius: 10px; border: 1px solid var(--border); background: #fff; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+  .detail-title h1 { font-size: 25px; font-weight: 800; letter-spacing: -0.5px; }
+  .detail-meta { color: var(--text-muted); font-size: 12px; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .detail-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .detail-pill { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 600; }
+  .detail-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+  .detail-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+  .detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 22px 24px; min-height: 110px; }
+  .detail-card-label { display: flex; align-items: center; justify-content: space-between; color: var(--text); font-size: 13px; font-weight: 700; margin-bottom: 14px; }
+  .detail-card-value { font-size: 25px; line-height: 1.2; font-weight: 800; letter-spacing: -0.4px; }
+  .detail-tabs { display: inline-flex; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 4px; gap: 4px; margin-bottom: 16px; }
+  .detail-tab { border: none; background: transparent; color: var(--text-muted); font-family: inherit; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+  .detail-tab.active { background: #101014; color: var(--text); }
+  .detail-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+  .detail-section-head h2 { font-size: 18px; font-weight: 800; }
+  .detail-section-head p { color: var(--text-muted); margin-top: 4px; font-size: 13px; }
+  .filter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-row span { color: var(--text-muted); font-size: 13px; }
+  .filter-pill { border: none; background: transparent; color: var(--text-muted); font-family: inherit; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+  .filter-pill.active { background: var(--surface2); color: var(--text); }
+  .filter-pill.in { color: var(--green); }
+  .filter-pill.out { color: var(--danger); }
+  .movement-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; min-height: 112px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-weight: 700; }
+  .movement-box.has-items { display: block; padding: 10px; }
+  .detail-mov-row { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  .detail-mov-row:last-child { border-bottom: none; }
+  .detail-mov-info { flex: 1; min-width: 0; }
+  .detail-mov-info strong { display: block; font-size: 13px; }
+  .detail-mov-info span { color: var(--text-muted); font-size: 12px; }
+  .hidden { display: none !important; }
+  .delete-warning-box { background: rgba(161,161,170,0.10); border: 1px solid rgba(161,161,170,0.26); border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+  .delete-warning-box strong { color: var(--danger); display: block; font-size: 14px; margin-bottom: 4px; }
+  .delete-product-preview { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; margin-bottom: 18px; }
+  .delete-product-preview span { display: block; color: var(--text-muted); font-size: 12px; margin-top: 3px; }
+
+  /* ── CARTÕES DE CRÉDITO ── */
+  .fin-section-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; color: var(--text); }
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 32px; }
+  .credit-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; position: relative; }
+  .credit-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+  .credit-card-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .credit-card-digits { font-size: 12px; color: var(--text-muted); margin-top: 3px; font-family: monospace; letter-spacing: 0.1em; }
+  .credit-card-actions { display: flex; gap: 4px; }
+  .credit-card-edit { width: 28px; height: 28px; border-radius: 7px; border: 1px solid transparent; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-dim); transition: all 0.13s; flex-shrink: 0; }
+  .credit-card-edit:hover { background: rgba(184,188,196,0.12); border-color: rgba(184,188,196,0.30); color: var(--blue); }
+  .credit-card-edit svg { width: 14px; height: 14px; }
+  .credit-card-delete { width: 28px; height: 28px; border-radius: 7px; border: 1px solid transparent; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-dim); transition: all 0.13s; flex-shrink: 0; }
+  .credit-card-delete:hover { background: rgba(161,161,170,0.12); border-color: rgba(161,161,170,0.30); color: var(--danger); }
+  .credit-card-delete svg { width: 14px; height: 14px; }
+  .credit-card-values { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .credit-card-val-label { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-bottom: 3px; }
+  .credit-card-val { font-size: 16px; font-weight: 700; }
+  .credit-card-val.disponivel { color: var(--green); }
+  .credit-card-val.utilizado { color: var(--yellow); }
+  .usage-bar-wrap { margin-top: 4px; }
+  .usage-bar-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-bottom: 5px; }
+  .usage-bar-track { height: 6px; background: var(--surface2); border-radius: 99px; overflow: hidden; border: 1px solid var(--border); }
+  .usage-bar-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+
+  /* ── FATURAS DO CARTÃO ── */
+  .fatura-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; }
+  .fatura-info h4 { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .fatura-info p { font-size: 12px; color: var(--text-muted); }
+  .fatura-status { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
+  .fatura-status.pago { background: rgba(199,199,199,0.14); color: var(--green); }
+  .fatura-status.pendente { background: rgba(161,161,170,0.14); color: var(--danger); }
+  .fatura-status.parcial { background: rgba(168,168,168,0.14); color: var(--yellow); }
+
+  /* ── Detail type selector (Radio Buttons) ── */
+  .detail-type-selector { display: flex; gap: 10px; margin-bottom: 4px; }
+  .detail-type-card { flex: 1; padding: 12px 14px; border-radius: 10px; border: 2px solid var(--border); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 10px; }
+  .detail-type-card.selected { border-color: var(--accent); background: rgba(156,163,175,0.12); }
+  .radio-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; transition: all 0.15s; }
+  .detail-type-card.selected .radio-dot { border-color: var(--accent); background: var(--accent); }
+
+  /* ── CUSTOM SELECT ── */
+  .custom-select-wrap { position: relative; user-select: none; }
+  .custom-select-trigger {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 36px 10px 13px; color: var(--text);
+    font-family: inherit; font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .custom-select-trigger:hover { border-color: var(--accent); }
+  .custom-select-wrap.open .custom-select-trigger {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(156,163,175,0.10);
+  }
+  .custom-select-icon {
+    position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+    pointer-events: none; color: var(--text-dim);
+    transition: transform 0.2s;
+  }
+  .custom-select-wrap.open .custom-select-icon { transform: translateY(-50%) rotate(180deg); }
+  .custom-select-trigger-text { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+
+  .custom-select-dropdown {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 999;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.25);
+    overflow: hidden;
+    opacity: 0; transform: translateY(-6px); pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s;
+    max-height: 220px; overflow-y: auto;
+  }
+  .custom-select-wrap.open .custom-select-dropdown {
+    opacity: 1; transform: translateY(0); pointer-events: all;
+  }
+  .custom-select-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; cursor: pointer; font-size: 13px;
+    color: var(--text-muted); transition: background 0.1s, color 0.1s;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .custom-select-option:last-child { border-bottom: none; }
+  .custom-select-option:hover { background: rgba(156,163,175,0.10); color: var(--text); }
+  .custom-select-option.selected {
+    background: rgba(156,163,175,0.14); color: var(--accent); font-weight: 600;
+  }
+  .custom-select-option .opt-check {
+    width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .custom-select-option.selected .opt-check {
+    border-color: var(--accent); background: var(--accent);
+  }
+  .custom-select-option.selected .opt-check::after {
+    content: ''; display: block; width: 5px; height: 5px;
+    border-radius: 50%; background: #111;
+  }
+
+  /* smaller variant for toolbar filters */
+  .custom-select-wrap.sm .custom-select-trigger {
+    font-size: 13px; padding: 8px 32px 8px 12px;
+  }
+  .custom-select-wrap.sm .custom-select-option { font-size: 13px; padding: 9px 12px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-icon">K.B</div>
+    <span>Manage<br>Inventory</span>
+  </div>
+  <nav class="nav">
+    <div class="nav-section-label">Menu</div>
+    <a class="nav-item" id="nav-dashboard" onclick="navigate('dashboard'); closeSidebar()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke-width="1.8"/></svg>
+      Dashboard
+    </a>
+
+    <div class="nav-section-label">Operação</div>
+    <a class="nav-item" onclick="toggleSubmenu('produtos-sub')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" d="M21 8l-9-5-9 5m18 0v8l-9 5-9-5V8m9 5v8M3 8l9 5"/></svg>
+      Produtos
+      <svg class="nav-expand" id="produtos-expand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </a>
+    <div class="nav-sub" id="produtos-sub" style="display:none">
+      <a class="nav-item" id="nav-estoque" onclick="navigate('estoque'); closeSidebar()">Estoque</a>
+    </div>
+
+    <a class="nav-item" id="nav-compras" onclick="navigate('compras'); closeSidebar()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      Compras
+      <svg class="nav-expand" id="compras-expand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </a>
+    <div class="nav-sub" id="compras-sub" style="display:none">
+      <a class="nav-item" id="nav-financeiro" onclick="navigate('compras'); switchSubpage('financeiro'); closeSidebar()">Financeiro</a>
+    </div>
+  </nav>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Menu">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+    <div class="breadcrumb" id="breadcrumb">
+      <span>Dashboard</span><span class="sep">›</span><span class="current">Início</span>
+    </div>
+    <div class="topbar-right">
+      <div class="avatar">K.B</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>Olá coração fora do peito, <span style="color:var(--accent)">vulgo BB</span></h1>
+          <p id="dash-date">Terça-Feira, 09 de Junho</p>
+        </div>
+      </div>
+
+      <div class="dash-kpi">
+        <div class="kpi-card">
+          <div class="kpi-label">Total de SKUs <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M12 8v4m0 4h.01"/></svg></div>
+          <div class="kpi-value" id="dash-skus">0</div>
+          <div class="kpi-sub">produtos cadastrados</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Unidades em Estoque</div>
+          <div class="kpi-value" id="dash-units">0</div>
+          <div class="kpi-sub">unidades totais</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Valor de Custo Total</div>
+          <div class="kpi-value" id="dash-cost">R$ 0,00</div>
+          <div class="kpi-sub">investimento em estoque</div>
+        </div>
+      </div>
+
+      <div class="recent-title">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Movimentações Recentes
+      </div>
+      <div id="dash-movs">
+        <div class="empty-state"><p>Nenhuma movimentação ainda.</p></div>
+      </div>
+    </div>
+
+    <div id="page-compras">
+      <div class="page-header">
+        <div class="page-title">
+          <h1 id="compras-page-title">Registro de Compras</h1>
+          <p id="compras-page-sub">Gerencie suas compras e calcule margens e ROI.</p>
+        </div>
+        <div class="page-actions" id="compras-page-actions">
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="openCompraModal()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Nova Compra
+          </button>
+        </div>
+      </div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab active" id="subtab-compras" onclick="switchSubpage('compras')">Compras</button>
+        <button class="sub-tab" id="subtab-financeiro" onclick="switchSubpage('financeiro')">Financeiro</button>
+      </div>
+
+      <div id="subpage-compras" class="active">
+        <div class="table-wrap">
+          <div class="table-head-compras">
+            <div>SKU</div>
+            <div>Compra</div>
+            <div>Catálogo</div>
+            <div>Qtd</div>
+            <div>Preço Und</div>
+            <div>Valor Total</div>
+            <div>Pagamento</div>
+            <div>P. Venda</div>
+            <div>Margem</div>
+            <div>ROI</div>
+            <div>Ações</div>
+          </div>
+          <div id="compras-table-body"></div>
+        </div>
+      </div>
+
+      <div id="subpage-financeiro">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="fin-section-title">
+            <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M1 10h22"/></svg>
+            Cartões de Crédito
+          </div>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="openCartaoModal()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Adicionar Cartão
+          </button>
+        </div>
+
+        <div class="cards-grid" id="cartoes-grid">
+          <div class="empty-state" style="padding:30px 20px;grid-column:1/-1">
+            <p>Nenhum cartão cadastrado.</p>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="fin-section-title">
+            <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            Lançamentos (Fluxo de Caixa)
+          </div>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="openFinanceiroModal()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Novo Lançamento
+          </button>
+        </div>
+
+        <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="kpi-card">
+            <div class="kpi-label">Total Receitas</div>
+            <div class="kpi-value" id="fin-receitas" style="color:var(--green)">R$ 0,00</div>
+            <div class="kpi-sub">entradas totais</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total Despesas</div>
+            <div class="kpi-value" id="fin-despesas" style="color:var(--danger)">R$ 0,00</div>
+            <div class="kpi-sub">inclui compras + cartões</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Saldo em Caixa</div>
+            <div class="kpi-value" id="fin-caixa">R$ 0,00</div>
+            <div class="kpi-sub">receitas − despesas totais</div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-head-financeiro">
+            <div>Descrição</div>
+            <div>Data</div>
+            <div>Tipo</div>
+            <div>Categoria</div>
+            <div>Valor</div>
+            <div>Pagamento</div>
+            <div>Ações</div>
+          </div>
+          <div id="financeiro-table-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-estoque">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>Estoque</h1>
+          <p>Gerencie seus SKUs e controle de estoque</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="openCadastroProdutoModal()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Cadastrar Produto
+          </button>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Unidades em Estoque</div>
+          <div class="kpi-value" id="kpi-units">0</div>
+          <div class="kpi-sub" id="kpi-skus-sub">Total de 0 SKUs</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Custo Total em Estoque</div>
+          <div class="kpi-value" id="kpi-cost">R$ 0,00</div>
+          <div class="kpi-sub">Investimento em estoque</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">SKUs com Estoque Zero</div>
+          <div class="kpi-value" id="kpi-zero" style="color:var(--danger)">0</div>
+          <div class="kpi-sub">produtos sem estoque</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Entradas (mês)</div>
+          <div class="kpi-value" id="kpi-in" style="color:var(--green)">0</div>
+          <div class="kpi-sub">unidades adicionadas</div>
+        </div>
+      </div>
+
+      <div id="zero-alert" style="display:none" class="alert">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.8" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        <div>
+          <strong>SKUs com Estoque Zero Encontrados</strong>
+          <span id="zero-alert-msg">Você tem produtos sem estoque.</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="search-input" placeholder="Buscar por código ou nome..." oninput="renderTable()">
+        </div>
+        <div class="custom-select-wrap sm" id="cs-filter-status">
+          <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-filter-status')">
+            <span class="custom-select-trigger-text" id="cs-filter-status-label">Todos os Status</span>
+          </div>
+          <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+          <div class="custom-select-dropdown">
+            <div class="custom-select-option selected" data-value="todos" onclick="pickCustomSelect('cs-filter-status','todos','Todos os Status',this); renderTable()"><span class="opt-check"></span>Todos os Status</div>
+            <div class="custom-select-option" data-value="zero" onclick="pickCustomSelect('cs-filter-status','zero','Sem estoque',this); renderTable()"><span class="opt-check"></span>Sem estoque</div>
+            <div class="custom-select-option" data-value="low" onclick="pickCustomSelect('cs-filter-status','low','Estoque baixo',this); renderTable()"><span class="opt-check"></span>Estoque baixo</div>
+            <div class="custom-select-option" data-value="ok" onclick="pickCustomSelect('cs-filter-status','ok','Em estoque',this); renderTable()"><span class="opt-check"></span>Em estoque</div>
+          </div>
+        </div>
+        <!-- hidden real select for JS compatibility -->
+        <select id="filter-status" style="display:none">
+          <option value="todos" selected>Todos os Status</option>
+          <option value="zero">Sem estoque</option>
+          <option value="low">Estoque baixo</option>
+          <option value="ok">Em estoque</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head">
+          <div></div>
+          <div>Produto</div>
+          <div>Estoque</div>
+          <div>Preço de Custo</div>
+          <div>Total em Estoque</div>
+          <div>Últ. Movimentação</div>
+          <div>Ações</div>
+        </div>
+        <div id="table-body"></div>
+      </div>
+    </div>
+
+    <div id="page-produto-detalhe">
+      <button class="back-link" onclick="navigate('estoque')">‹ Voltar</button>
+
+      <div class="product-detail-top">
+        <div class="product-detail-main">
+          <div class="detail-product-img" id="detail-emoji">📦</div>
+          <div class="detail-title">
+            <h1 id="detail-name">Produto</h1>
+            <div class="detail-meta">
+              <span>SKU: <strong id="detail-sku">—</strong></span>
+              <span>•</span>
+              <span>Criado em <strong id="detail-created">—</strong></span>
+              <span class="detail-pill" id="detail-kind">Unitário</span>
+            </div>
+            <div class="detail-badges">
+              <span class="detail-pill" id="detail-qty-pill">0 unidades</span>
+              <span class="detail-pill" id="detail-stock-value-pill">R$ 0,00 em estoque</span>
+            </div>
+          </div>
+        </div>
+        <div class="detail-actions">
+          <button type="button" class="btn btn-ghost" onclick="openEditProductModal()">Editar cadastro</button>
+          <button type="button" class="btn btn-danger" onclick="openDeleteProductModal()">Excluir</button>
+        </div>
+      </div>
+
+      <div class="detail-cards" style="grid-template-columns: repeat(1, 1fr); max-width: 260px;">
+        <div class="detail-card">
+          <div class="detail-card-label"><span>Custo p/ Unid ⓘ</span><span>$</span></div>
+          <div class="detail-card-value" id="detail-average-cost">R$ 0,00</div>
+        </div>
+      </div>
+
+      <div class="detail-tabs">
+        <button class="detail-tab active" id="tab-movs" onclick="selectDetailTab('movs')">Movimentações</button>
+        <button class="detail-tab" id="tab-costs" onclick="selectDetailTab('costs')">Histórico de Custos</button>
+      </div>
+
+      <section id="detail-movs-tab">
+        <div class="detail-section-head">
+          <div>
+            <h2>Histórico de Movimentações</h2>
+            <p>Todas as entradas e saídas de estoque</p>
+          </div>
+          <button class="btn btn-primary" onclick="openDetailMovModal()">+ Adicionar movimentação</button>
+        </div>
+        <div class="filter-row">
+          <span>Filtrar:</span>
+          <button class="filter-pill active" id="filter-todos" onclick="setDetailMovFilter('todos')">Todos (0)</button>
+          <button class="filter-pill in" id="filter-entrada" onclick="setDetailMovFilter('entrada')">Entradas (0)</button>
+          <button class="filter-pill out" id="filter-saida" onclick="setDetailMovFilter('saida')">Saídas (0)</button>
+        </div>
+        <div class="movement-box" id="detail-movements-box">Nenhuma movimentação registrada</div>
+      </section>
+
+      <section id="detail-costs-tab" class="hidden">
+        <div class="detail-section-head">
+          <div>
+            <h2>Histórico de Custos</h2>
+            <p>Entradas que alteraram ou confirmaram o custo médio do produto</p>
+          </div>
+        </div>
+        <div class="movement-box" id="detail-costs-box">Nenhum histórico de custo registrado</div>
+      </section>
+    </div>
+
+  </div>
+</main>
+
+<div class="modal-overlay" id="modal-cadastro-produto">
+  <div class="modal">
+    <div class="modal-header">
+      <div><h2>Cadastrar Produto</h2><p>Após salvar, o produto estará disponível no estoque.</p></div>
+      <div class="close-btn" onclick="closeModal('cadastro-produto')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome</label>
+      <input class="form-input" id="cad-name" placeholder="Ex: Produto 01" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">SKU</label>
+      <input class="form-input" id="cad-sku" placeholder="Ex: PROD-001" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo do produto</label>
+      <div class="checkbox-grid">
+        <label class="check-card selected" id="card-unitario" onclick="selectProductKind('unitario')">
+          <input type="checkbox" id="cad-unitario" checked>
+          <div><strong>Unitário</strong><span>Produto vendido como uma única unidade.</span></div>
+        </label>
+        <label class="check-card" id="card-kit" onclick="selectProductKind('kit')">
+          <input type="checkbox" id="cad-kit">
+          <div><strong>KIT</strong><span>Produto composto por mais de um item vinculado ao mesmo SKU.</span></div>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer" style="margin-top:22px">
+      <button class="btn btn-ghost" onclick="clearCadastroForm()">Limpar</button>
+      <button class="btn btn-primary" onclick="saveCadastroProduto()">Cadastrar Produto</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-compra">
+  <div class="modal" style="width: 600px;">
+    <div class="modal-header">
+      <div><h2 id="modal-compra-title">Nova Compra</h2><p>Preencha os dados para registrar sua compra</p></div>
+      <div class="close-btn" onclick="closeModal('compra')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">SKU do Produto</label>
+      <input class="form-input" id="compra-sku" placeholder="Ex: PROD-123" type="text">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Compra (Nome a exibir)</label>
+        <input class="form-input" id="compra-nome" placeholder="Ex: Fornecedor X" type="text">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Compra (Link URL)</label>
+        <input class="form-input" id="compra-link" placeholder="https://..." type="url">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Catálogo (Nome a exibir)</label>
+        <input class="form-input" id="cat-nome" placeholder="Ex: Link Catálogo" type="text">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Catálogo (Link URL)</label>
+        <input class="form-input" id="cat-link" placeholder="https://..." type="url">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Quantidade</label>
+        <input class="form-input" id="compra-qty" placeholder="0" type="number" min="1" oninput="calcCompraTotal()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Preço Unitário</label>
+        <div class="form-prefix">
+          <span>R$</span>
+          <input id="compra-preco" placeholder="0,00" type="text" inputmode="numeric" oninput="formatMoneyField(this); calcCompraTotal()">
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Forma de Pagamento</label>
+        <div class="custom-select-wrap" id="cs-compra-cartao">
+          <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-compra-cartao')">
+            <span class="custom-select-trigger-text" id="cs-compra-cartao-label">Caixa / Dinheiro</span>
+          </div>
+          <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+          <div class="custom-select-dropdown" id="cs-compra-cartao-dropdown">
+            <div class="custom-select-option selected" data-value="" onclick="pickCustomSelect('cs-compra-cartao','','Caixa / Dinheiro',this)"><span class="opt-check"></span>Caixa / Dinheiro</div>
+          </div>
+        </div>
+        <select id="compra-cartao" style="display:none">
+          <option value="">Caixa / Dinheiro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Parcelas</label>
+        <input class="form-input" id="compra-parcelas" placeholder="Ex: 3" type="number" min="1" value="1">
+      </div>
+    </div>
+    <div class="form-group" style="background: var(--surface2); padding: 14px 16px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+      <label class="form-label" style="margin: 0;">Valor Total (Automático)</label>
+      <div id="compra-total-display" style="font-size: 18px; font-weight: 700; color: var(--green);">R$ 0,00</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Preço de Venda</label>
+        <div class="form-prefix">
+          <span>R$</span>
+          <input id="compra-venda" placeholder="0,00" type="text" inputmode="numeric" oninput="formatMoneyField(this)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Margem</label>
+        <input class="form-input" id="compra-margem" placeholder="Ex: 30% ou R$ 5,00" type="text">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">ROI</label>
+      <input class="form-input" id="compra-roi" placeholder="Ex: 150%" type="text">
+    </div>
+    <div class="modal-footer" style="margin-top: 10px;">
+      <button class="btn btn-ghost" onclick="closeModal('compra')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-compra" onclick="saveCompra()">Registrar Compra</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-financeiro">
+  <div class="modal">
+    <div class="modal-header">
+      <div><h2>Novo Lançamento</h2><p>Registre movimentações do seu caixa</p></div>
+      <div class="close-btn" onclick="closeModal('financeiro')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <div class="detail-type-selector">
+        <div class="detail-type-card selected" id="fin-type-receita" onclick="selectFinType('receita')">
+          <span class="radio-dot"></span>
+          <div style="font-weight:700">💰 Receita</div>
+        </div>
+        <div class="detail-type-card" id="fin-type-despesa" onclick="selectFinType('despesa')">
+          <span class="radio-dot"></span>
+          <div style="font-weight:700">💸 Despesa</div>
+        </div>
+        <div class="detail-type-card" id="fin-type-fatura" onclick="selectFinType('fatura')">
+          <span class="radio-dot"></span>
+          <div style="font-weight:700">💳 Fatura</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <input class="form-input" id="fin-descricao" placeholder="Ex: Venda de produtos" type="text">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor</label>
+        <div class="form-prefix">
+          <span>R$</span>
+          <input id="fin-valor" placeholder="0,00" type="text" inputmode="numeric" oninput="formatMoneyField(this)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input class="form-input" id="fin-data" type="date">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <input class="form-input" id="fin-categoria" placeholder="Ex: Fornecedor, Internet..." type="text">
+      </div>
+      <div class="form-group" id="fin-pagamento-wrap" style="display: none;">
+        <label class="form-label" id="fin-pagamento-label">Forma de Pagamento</label>
+        <div class="custom-select-wrap" id="cs-fin-cartao">
+          <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-fin-cartao')">
+            <span class="custom-select-trigger-text" id="cs-fin-cartao-label">Caixa / Dinheiro</span>
+          </div>
+          <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+          <div class="custom-select-dropdown" id="cs-fin-cartao-dropdown">
+            <div class="custom-select-option selected" data-value="" onclick="pickCustomSelect('cs-fin-cartao','','Caixa / Dinheiro',this)"><span class="opt-check"></span>Caixa / Dinheiro</div>
+          </div>
+        </div>
+        <select id="fin-cartao" style="display:none"></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('financeiro')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFinanceiro()">Salvar Lançamento</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-faturas">
+  <div class="modal" style="width: 500px;">
+    <div class="modal-header">
+      <div><h2 id="faturas-cartao-nome">Faturas do Cartão</h2><p>Previsão de parcelas e faturas mensais.</p></div>
+      <div class="close-btn" onclick="closeModal('faturas')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></div>
+    </div>
+    <div id="faturas-list" style="max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+      </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-cartao">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2 id="modal-cartao-title">Adicionar Cartão</h2>
+        <p>Cadastre ou edite um cartão de crédito.</p>
+      </div>
+      <div class="close-btn" onclick="closeModal('cartao')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Apelido do Cartão</label><input class="form-input" id="cartao-nome" placeholder="Ex: Nubank, Inter..." type="text"></div>
+      <div class="form-group"><label class="form-label">Últimos 4 dígitos</label><input class="form-input" id="cartao-digitos" placeholder="0000" type="text" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Limite Total</label><div class="form-prefix"><span>R$</span><input id="cartao-limite" placeholder="0,00" type="text" inputmode="numeric" oninput="formatMoneyField(this)"></div></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('cartao')">Cancelar</button><button class="btn btn-primary" id="btn-save-cartao" onclick="saveCartao()">Salvar Cartão</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-edit-product">
+  <div class="modal">
+    <div class="modal-header">
+      <div><h2>Editar Cadastro do Produto</h2></div>
+      <div class="close-btn" onclick="closeEditProductModal()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></div>
+    </div>
+    <div class="form-group"><label class="form-label">Nome</label><input class="form-input" id="edit-prod-name" type="text"></div>
+    <div class="form-group"><label class="form-label">SKU</label><input class="form-input" id="edit-prod-sku" type="text"></div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <div class="checkbox-grid">
+        <label class="check-card" id="edit-card-unitario" onclick="selectEditProductKind('unitario')"><input type="checkbox" id="edit-prod-unitario"><div><strong>Unitário</strong></div></label>
+        <label class="check-card" id="edit-card-kit" onclick="selectEditProductKind('kit')"><input type="checkbox" id="edit-prod-kit"><div><strong>KIT</strong></div></label>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeEditProductModal()">Cancelar</button><button class="btn btn-primary" onclick="saveEditedProduct()">Salvar Alterações</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-delete-product">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2>Excluir Cadastro</h2>
+        <p>Confirme abaixo antes de apagar este produto.</p>
+      </div>
+      <div class="close-btn" onclick="closeDeleteProductModal()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></div>
+    </div>
+    <div class="delete-warning-box">
+      <strong>Atenção: esta ação não poderá ser desfeita.</strong>
+      O produto e todas as movimentações vinculadas a ele serão removidos.
+    </div>
+    <div class="delete-product-preview">
+      <strong id="delete-product-name">Produto</strong>
+      <span>SKU: <span id="delete-product-sku">—</span></span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeDeleteProductModal()">Não, cancelar</button>
+      <button class="btn btn-danger" onclick="confirmDeleteProduct()">Sim, excluir</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-prod-mov">
+  <div class="modal">
+    <div class="modal-header">
+      <div><h2>Movimentação de Estoque</h2></div>
+      <div class="close-btn" onclick="closeProductMovModal()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></div>
+    </div>
+    <div class="form-group">
+      <div class="detail-type-selector">
+        <div class="detail-type-card selected" id="prod-type-entrada" onclick="selectDetailMovType('entrada')"><span class="radio-dot"></span><div style="font-weight:700">📦 Entrada</div></div>
+        <div class="detail-type-card" id="prod-type-saida" onclick="selectDetailMovType('saida')"><span class="radio-dot"></span><div style="font-weight:700">🚚 Saída</div></div>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Quantidade</label><input class="form-input" id="prod-mov-qty" type="number" min="1"></div>
+    <div class="form-group" id="prod-cost-field"><label class="form-label">Custo Unitário</label><div class="form-prefix"><span>R$</span><input id="prod-mov-cost" type="text" oninput="formatMoneyField(this)"></div></div>
+    <div class="form-group">
+      <label class="form-label">Motivo</label>
+      <input class="form-input" id="prod-mov-reason" type="text" placeholder="Ex: Entrada manual, venda, ajuste de estoque...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Observações</label>
+      <textarea class="form-input" id="prod-mov-notes" rows="3" style="resize:vertical;min-height:82px" placeholder="Detalhes adicionais da movimentação, se necessário."></textarea>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeProductMovModal()">Cancelar</button><button class="btn btn-primary" onclick="saveDetailMovimentacao()">Salvar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-confirmacao">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2 id="confirm-title">Confirmar ação</h2>
+        <p id="confirm-subtitle">Validação necessária antes de continuar.</p>
+      </div>
+      <div class="close-btn" onclick="closeConfirmacao()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></div>
+    </div>
+    <div class="delete-warning-box" id="confirm-message">Tem certeza de que deseja continuar?</div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="confirm-no-btn" onclick="closeConfirmacao()">Não</button>
+      <button class="btn btn-danger" id="confirm-yes-btn" onclick="confirmarAcao()">Sim</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE + SUPABASE ─────────────────────────────────────────────────────
+// Troque pelos dados do seu projeto Supabase: Project Settings → API.
+const SUPABASE_URL = 'https://gnyjpaaldizqfzyywfba.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_BS-7etqYNJ0d7WZHXlZKsQ_r7MJ-9bB';
+
+const SUPABASE_CONFIGURED =
+  SUPABASE_URL.startsWith('https://') &&
+  !SUPABASE_URL.includes('SEU_PROJETO') &&
+  SUPABASE_ANON_KEY &&
+  !SUPABASE_ANON_KEY.includes('SUA_ANON_KEY');
+
+const db = (SUPABASE_CONFIGURED && window.supabase)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+const appData = {
+  skus: [],
+  movs: [],
+  compras: [],
+  financeiro: [],
+  cartoes: []
+};
+
+function cloneRows(rows) { return (rows || []).map(r => ({ ...r })); }
+function loadSkus() { return cloneRows(appData.skus); }
+function loadMovs() { return cloneRows(appData.movs); }
+function loadCompras() { return cloneRows(appData.compras); }
+function loadFinanceiro() { return cloneRows(appData.financeiro); }
+function loadCartoes() { return cloneRows(appData.cartoes); }
+
+function makeId() {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+function n(value, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
+function i(value, fallback = 0) { const parsed = parseInt(value, 10); return Number.isFinite(parsed) ? parsed : fallback; }
+function cleanText(value, fallback = '') { return (value === null || value === undefined || value === '') ? fallback : String(value); }
+function nullableUuid(value) { return value ? String(value) : null; }
+function assertSupabase() {
+  if (!db) {
+    throw new Error('Supabase não configurado. Preencha SUPABASE_URL e SUPABASE_ANON_KEY no início do bloco <script>.');
+  }
+}
+async function requireSupabase() {
+  assertSupabase();
+}
+function handleAsyncError(err, fallback = 'Erro ao executar operação.') {
+  console.error(err);
+  alert(`${fallback}\n\n${err && err.message ? err.message : err}`);
+}
+
+function mapSkuFromDb(r) {
+  return {
+    id: r.id, name: cleanText(r.name), code: cleanText(r.code), kind: cleanText(r.kind, 'unitario'),
+    emoji: cleanText(r.emoji, '📦'), cost: n(r.cost), packageCost: n(r.package_cost),
+    tax: cleanText(r.tax, 'Padrão da conta'), qty: i(r.qty), min: i(r.min, 5), ads: n(r.ads),
+    sync: Boolean(r.sync), createdAt: r.created_at, updatedAt: r.updated_at
+  };
+}
+function mapSkuToDb(s) {
+  return {
+    id: s.id || makeId(), name: cleanText(s.name), code: cleanText(s.code),
+    kind: s.kind === 'kit' ? 'kit' : 'unitario', emoji: cleanText(s.emoji, s.kind === 'kit' ? '🧩' : '📦'),
+    cost: n(s.cost), package_cost: n(s.packageCost), tax: cleanText(s.tax, 'Padrão da conta'),
+    qty: i(s.qty), min: i(s.min, 5), ads: n(s.ads), sync: Boolean(s.sync)
+  };
+}
+function mapMovFromDb(r) {
+  return {
+    id: r.id, skuId: r.sku_id, skuName: cleanText(r.sku_name), type: r.type,
+    qty: i(r.qty), cost: n(r.cost), note: cleanText(r.note), notes: cleanText(r.notes),
+    previousQty: i(r.previous_qty), qtyAfter: i(r.qty_after), previousCost: n(r.previous_cost),
+    averageCostAfter: n(r.average_cost_after), date: r.date, createdAt: r.created_at
+  };
+}
+function mapMovToDb(m) {
+  return {
+    id: m.id || makeId(), sku_id: m.skuId, sku_name: cleanText(m.skuName), type: m.type,
+    qty: i(m.qty), cost: n(m.cost), note: cleanText(m.note), notes: cleanText(m.notes),
+    previous_qty: i(m.previousQty), qty_after: i(m.qtyAfter), previous_cost: n(m.previousCost),
+    average_cost_after: n(m.averageCostAfter), date: m.date || new Date().toISOString()
+  };
+}
+function mapCompraFromDb(r) {
+  return {
+    id: r.id, sku: cleanText(r.sku), compraNome: cleanText(r.compra_nome), compraLink: cleanText(r.compra_link),
+    catNome: cleanText(r.cat_nome), catLink: cleanText(r.cat_link), qty: i(r.qty, 1), preco: n(r.preco),
+    total: n(r.total), cartaoId: r.cartao_id || '', parcelas: i(r.parcelas, 1), venda: n(r.venda),
+    margem: cleanText(r.margem), roi: cleanText(r.roi), date: r.date, createdAt: r.created_at
+  };
+}
+function mapCompraToDb(c) {
+  return {
+    id: c.id || makeId(), sku: cleanText(c.sku), compra_nome: cleanText(c.compraNome),
+    compra_link: cleanText(c.compraLink), cat_nome: cleanText(c.catNome), cat_link: cleanText(c.catLink),
+    qty: i(c.qty, 1), preco: n(c.preco), total: n(c.total), cartao_id: nullableUuid(c.cartaoId),
+    parcelas: i(c.parcelas, 1), venda: n(c.venda), margem: cleanText(c.margem), roi: cleanText(c.roi),
+    date: c.date || new Date().toISOString()
+  };
+}
+function mapCartaoFromDb(r) {
+  return { id: r.id, nome: cleanText(r.nome), digitos: cleanText(r.digitos), limite: n(r.limite), utilizado: n(r.utilizado), createdAt: r.created_at, updatedAt: r.updated_at };
+}
+function mapCartaoToDb(c) {
+  return { id: c.id || makeId(), nome: cleanText(c.nome), digitos: cleanText(c.digitos), limite: n(c.limite), utilizado: n(c.utilizado) };
+}
+function mapLancFromDb(r) {
+  return { id: r.id, descricao: cleanText(r.descricao), tipo: r.tipo, valor: n(r.valor), data: r.data, categoria: cleanText(r.categoria), cartaoId: r.cartao_id || '', createdAt: r.created_at };
+}
+function mapLancToDb(l) {
+  return { id: l.id || makeId(), descricao: cleanText(l.descricao), tipo: l.tipo, valor: n(l.valor), data: l.data || new Date().toISOString().slice(0, 10), categoria: cleanText(l.categoria), cartao_id: nullableUuid(l.cartaoId) };
+}
+
+async function fetchTable(table, orderColumn = 'created_at', ascending = true) {
+  assertSupabase();
+  const { data, error } = await db.from(table).select('*').order(orderColumn, { ascending });
+  if (error) throw error;
+  return data || [];
+}
+
+async function loadAllData() {
+  if (!db) {
+    const msg = 'Configure SUPABASE_URL e SUPABASE_ANON_KEY no arquivo para carregar os dados do Supabase.';
+    const container = document.getElementById('dash-movs');
+    if (container) container.innerHTML = `<div class="empty-state"><p>${msg}</p></div>`;
+    console.warn(msg);
+    return;
+  }
+
+  try {
+    const [produtos, movimentacoes, compras, cartoes, lancamentos] = await Promise.all([
+      fetchTable('produtos', 'created_at', true),
+      fetchTable('movimentacoes', 'date', false),
+      fetchTable('compras', 'date', false),
+      fetchTable('cartoes', 'created_at', true),
+      fetchTable('lancamentos', 'data', false)
+    ]);
+
+    appData.skus = produtos.map(mapSkuFromDb);
+    appData.movs = movimentacoes.map(mapMovFromDb);
+    appData.compras = compras.map(mapCompraFromDb);
+    appData.cartoes = cartoes.map(mapCartaoFromDb);
+    appData.financeiro = lancamentos.map(mapLancFromDb);
+  } catch (err) {
+    handleAsyncError(err, 'Não foi possível carregar os dados do Supabase.');
+  }
+}
+
+async function persistCollection(cacheKey, table, rows, mapper) {
+  assertSupabase();
+  const previous = cloneRows(appData[cacheKey]);
+  const next = cloneRows(rows).map(r => ({ ...r, id: r.id || makeId() }));
+  const previousIds = new Set(previous.map(r => String(r.id)));
+  const nextIds = new Set(next.map(r => String(r.id)));
+  const deletedIds = [...previousIds].filter(id => !nextIds.has(id));
+
+  if (deletedIds.length) {
+    const { error } = await db.from(table).delete().in('id', deletedIds);
+    if (error) throw error;
+  }
+  if (next.length) {
+    const { error } = await db.from(table).upsert(next.map(mapper), { onConflict: 'id' });
+    if (error) throw error;
+  }
+  appData[cacheKey] = next;
+  return next;
+}
+
+async function deleteById(table, cacheKey, id) {
+  assertSupabase();
+  const { error } = await db.from(table).delete().eq('id', id);
+  if (error) throw error;
+  appData[cacheKey] = appData[cacheKey].filter(r => String(r.id) !== String(id));
+}
+
+async function saveSkus(rows) { return persistCollection('skus', 'produtos', rows, mapSkuToDb); }
+async function saveMovs(rows) { return persistCollection('movs', 'movimentacoes', rows, mapMovToDb); }
+async function saveCompras(rows) { return persistCollection('compras', 'compras', rows, mapCompraToDb); }
+async function saveFinanceiro2(rows) { return persistCollection('financeiro', 'lancamentos', rows, mapLancToDb); }
+async function saveCartoes(rows) { return persistCollection('cartoes', 'cartoes', rows, mapCartaoToDb); }
+
+let currentProductId = null;
+let detailMovFilter = 'todos';
+let detailMovType = 'entrada';
+let productKind = 'unitario';
+let editProductKind = 'unitario';
+let finType = 'receita';
+let currentSubpage = 'compras';
+let editCompraId = null;
+let editCartaoId = null;
+let pendingConfirmAction = null;
+
+// ─── SIDEBAR & NAV ───────────────────────────────────────────────────────────
+function toggleSidebar() { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebar-overlay'); const isOpen = sb.classList.contains('open'); sb.classList.toggle('open', !isOpen); ov.classList.toggle('open', !isOpen); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
+function navigate(page) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.remove('active'));
+  if (page === 'dashboard') { document.getElementById('nav-dashboard').classList.add('active'); document.getElementById('page-dashboard').classList.add('active'); renderDashboard(); }
+  else if (page === 'estoque') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-estoque').classList.add('active'); renderKpis(); renderTable(); }
+  else if (page === 'produto-detalhe') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-produto-detalhe').classList.add('active'); renderProductDetail(); }
+  else if (page === 'compras') { document.getElementById('nav-compras').classList.add('active'); document.getElementById('page-compras').classList.add('active'); switchSubpage(currentSubpage); }
+}
+function toggleSubmenu(id) {
+  const sub = document.getElementById(id); const expId = id === 'produtos-sub' ? 'produtos-expand' : 'compras-expand';
+  const exp = document.getElementById(expId); const open = sub.style.display === 'block';
+  sub.style.display = open ? 'none' : 'block'; if (exp) exp.classList.toggle('open', !open);
+}
+function switchSubpage(name) {
+  currentSubpage = name;
+  document.getElementById('subpage-compras').classList.toggle('active', name === 'compras');
+  document.getElementById('subpage-financeiro').classList.toggle('active', name === 'financeiro');
+  document.getElementById('subtab-compras').classList.toggle('active', name === 'compras');
+  document.getElementById('subtab-financeiro').classList.toggle('active', name === 'financeiro');
+  if (name === 'compras') {
+    document.getElementById('compras-page-title').textContent = 'Registro de Compras';
+    document.getElementById('compras-page-sub').textContent = 'Gerencie suas compras e calcule margens e ROI.';
+    document.getElementById('compras-page-actions').innerHTML = `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="openCompraModal()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Nova Compra</button>`;
+    renderCompras();
+  } else {
+    document.getElementById('compras-page-title').textContent = 'Financeiro';
+    document.getElementById('compras-page-sub').textContent = 'Acompanhe receitas, despesas e fluxo de caixa.';
+    document.getElementById('compras-page-actions').innerHTML = '';
+    renderFinanceiro(); renderCartoes();
+  }
+}
+function openModal(name) { const modal = document.getElementById('modal-' + name); if (modal) modal.classList.add('open'); }
+function closeModal(name) { const modal = document.getElementById('modal-' + name); if (modal) modal.classList.remove('open'); }
+
+function openConfirmacao({ titulo = 'Confirmar ação', subtitulo = 'Validação necessária antes de continuar.', mensagem = 'Tem certeza de que deseja continuar?', textoSim = 'Sim', textoNao = 'Não', onConfirm = null } = {}) {
+  pendingConfirmAction = typeof onConfirm === 'function' ? onConfirm : null;
+  document.getElementById('confirm-title').textContent = titulo;
+  document.getElementById('confirm-subtitle').textContent = subtitulo;
+  document.getElementById('confirm-message').textContent = mensagem;
+  document.getElementById('confirm-yes-btn').textContent = textoSim;
+  document.getElementById('confirm-no-btn').textContent = textoNao;
+  openModal('confirmacao');
+}
+function closeConfirmacao() { pendingConfirmAction = null; closeModal('confirmacao'); }
+async function confirmarAcao() {
+  const action = pendingConfirmAction;
+  pendingConfirmAction = null;
+  closeModal('confirmacao');
+  if (typeof action === 'function') {
+    try { await action(); } catch (err) { handleAsyncError(err, 'Erro ao confirmar ação.'); }
+  }
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o => { o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }); });
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function fmt(v) { return 'R$ ' + (v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+function fmtDate(iso) { if (!iso) return '—'; const d = new Date(iso); if (Number.isNaN(d.getTime())) return '—'; return `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; }
+function fmtOnlyDate(iso) { if (!iso) return '—'; return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }); }
+function formatMesAno(key) { const [ano, mes] = key.split('-'); const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return `${meses[parseInt(mes)-1]} / ${ano}`; }
+function formatMoneyInputValue(value) { return Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function parseMoneyInputValue(value) { const n = String(value || '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.'); const p = parseFloat(n); return isNaN(p) ? 0 : p; }
+function formatMoneyField(el) { let value = el.value.replace(/\D/g, ''); if (!value) { el.value = ''; return; } el.value = (parseInt(value, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+// ─── PRODUTOS & ESTOQUE (MANTIDO COMPACTO) ──────────────────────────────────
+function openCadastroProdutoModal() { clearCadastroForm(); openModal('cadastro-produto'); }
+function selectProductKind(kind) { productKind = kind; const isUnit = kind === 'unitario'; document.getElementById('cad-unitario').checked = isUnit; document.getElementById('cad-kit').checked = !isUnit; document.getElementById('card-unitario').classList.toggle('selected', isUnit); document.getElementById('card-kit').classList.toggle('selected', !isUnit); }
+function clearCadastroForm() { document.getElementById('cad-name').value = ''; document.getElementById('cad-sku').value = ''; selectProductKind('unitario'); }
+async function saveCadastroProduto() {
+  const name = document.getElementById('cad-name').value.trim();
+  const code = document.getElementById('cad-sku').value.trim();
+  if (!name || !code) { alert('Nome e SKU são obrigatórios.'); return; }
+  const skus = loadSkus();
+  if (skus.find(s => (s.code || '').toLowerCase() === code.toLowerCase())) { alert('Já existe um produto com este SKU.'); return; }
+
+  const newId = makeId();
+  skus.push({
+    id: newId, name, code, kind: productKind, emoji: productKind === 'kit' ? '🧩' : '📦',
+    cost: 0, packageCost: 0, tax: 'Padrão da conta', qty: 0, min: 5, ads: 0,
+    sync: false, createdAt: new Date().toISOString()
+  });
+
+  try {
+    await saveSkus(skus);
+    closeModal('cadastro-produto');
+    renderKpis(); renderTable(); openProductDetail(newId);
+  } catch (err) { handleAsyncError(err, 'Erro ao cadastrar produto.'); }
+}
+function renderTable() { const skus = loadSkus(); const q = document.getElementById('search-input').value.toLowerCase(); const f = document.getElementById('filter-status').value; const filtered = skus.filter(s => { const match = s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q); if (!match) return false; if (f === 'zero') return s.qty === 0; if (f === 'low') return s.qty > 0 && s.qty <= s.min; if (f === 'ok') return s.qty > s.min; return true; }); const body = document.getElementById('table-body'); if (filtered.length === 0) { body.innerHTML = `<div class="empty-state"><p>Nenhum produto encontrado.</p></div>`; return; } const movs = loadMovs(); body.innerHTML = filtered.map(s => { const cls = s.qty === 0 ? 'stock-zero' : s.qty <= s.min ? 'stock-low' : 'stock-ok'; const total = s.qty * s.cost; const lastMov = movs.find(m => idsMatch(m.skuId, s.id)); const lastDate = lastMov ? fmtDate(lastMov.date) : '—'; return ` <div class="table-row"> <div></div> <div class="product-cell"> <div class="product-img">${s.emoji}</div> <div> <button class="product-link" onclick="openProductDetail('${s.id}')">${s.name}</button> <span class="product-sku">${s.code}</span> </div> </div> <div><div class="stock-val ${cls}">${s.qty}</div><div class="stock-unit">unidades</div></div> <div class="cell-muted">${fmt(s.cost)}</div> <div class="cell-muted">${fmt(total)}</div> <div class="cell-muted">${lastDate}</div> <div class="actions-cell"> <button class="mini-view-btn" onclick="openProductDetail('${s.id}')">Ver</button> </div> </div>`; }).join(''); }
+function openProductDetail(skuId) { currentProductId = skuId; detailMovFilter = 'todos'; navigate('produto-detalhe'); }
+function idsMatch(a, b) { return String(a) === String(b); }
+function getCurrentSku() { const skus = loadSkus(); let sku = skus.find(s => idsMatch(s.id, currentProductId)); if (sku) return sku; const detailSkuEl = document.getElementById('detail-sku'); const codeOnScreen = detailSkuEl ? detailSkuEl.textContent.trim() : ''; sku = skus.find(s => (s.code || '').trim() === codeOnScreen); if (sku) { currentProductId = sku.id; return sku; } return null; }
+function renderProductDetail() { const sku = getCurrentSku(); if (!sku) { navigate('estoque'); return; } const movs = loadMovs().filter(m => idsMatch(m.skuId, sku.id)); const entradas = movs.filter(m => m.type === 'entrada'); const saidas = movs.filter(m => m.type === 'saida'); const stockValue = sku.qty * sku.cost; document.getElementById('detail-emoji').textContent = sku.emoji || '📦'; document.getElementById('detail-name').textContent = sku.name; document.getElementById('detail-sku').textContent = sku.code; document.getElementById('detail-created').textContent = fmtOnlyDate(sku.createdAt); document.getElementById('detail-kind').textContent = (sku.kind === 'kit') ? 'KIT' : 'Unitário'; document.getElementById('detail-qty-pill').textContent = `${sku.qty} unidades`; document.getElementById('detail-stock-value-pill').textContent = `${fmt(stockValue)} em estoque`; document.getElementById('detail-average-cost').textContent = fmt(sku.cost || 0); document.getElementById('filter-todos').textContent = `Todos (${movs.length})`; document.getElementById('filter-entrada').textContent = `Entradas (${entradas.length})`; document.getElementById('filter-saida').textContent = `Saídas (${saidas.length})`; document.getElementById('filter-todos').classList.toggle('active', detailMovFilter === 'todos'); document.getElementById('filter-entrada').classList.toggle('active', detailMovFilter === 'entrada'); document.getElementById('filter-saida').classList.toggle('active', detailMovFilter === 'saida'); renderDetailMovements(movs); renderDetailCosts(entradas); }
+function renderDetailMovements(movs) { const box = document.getElementById('detail-movements-box'); const filtered = movs.filter(m => detailMovFilter === 'todos' ? true : m.type === detailMovFilter); if (filtered.length === 0) { box.classList.remove('has-items'); box.textContent = 'Nenhuma movimentação registrada'; return; } box.classList.add('has-items'); box.innerHTML = filtered.map(m => { const isEntrada = m.type === 'entrada'; const metaParts = [fmtDate(m.date)]; if (isEntrada) metaParts.push('Entrada de estoque'); else metaParts.push('Saída de estoque'); if (m.note && m.note !== 'Entrada de estoque' && m.note !== 'Saída de estoque') metaParts.push(m.note); if (m.notes) metaParts.push(m.notes); if (m.qtyAfter !== undefined) metaParts.push(`Estoque após: ${m.qtyAfter} un`); if (isEntrada && m.cost) metaParts.push(`Custo p/ Unid: ${fmt(m.cost)}`); return ` <div class="detail-mov-row"> <div class="mov-badge ${isEntrada ? 'in' : 'out'}">${isEntrada ? '📦' : '🚚'}</div> <div class="detail-mov-info"> <strong>${isEntrada ? 'Entrada' : 'Saída'} de ${m.qty} unidade${m.qty === 1 ? '' : 's'}</strong> <span>${metaParts.join(' · ')}</span> </div> <div style="text-align:right"> <div class="mov-qty ${isEntrada ? 'in' : 'out'}">${isEntrada ? '+' : '-'}${m.qty}</div> </div> </div>`; }).join(''); }
+function renderDetailCosts(entradas) { const box = document.getElementById('detail-costs-box'); if (!entradas.length) { box.classList.remove('has-items'); box.textContent = 'Nenhum histórico de custo registrado'; return; } box.classList.add('has-items'); box.innerHTML = entradas.map(m => { const prevCost = m.previousCost !== undefined ? m.previousCost : null; const costChanged = prevCost !== null && prevCost !== m.cost; return ` <div class="detail-mov-row"> <div class="mov-badge in">$</div> <div class="detail-mov-info"> <strong>${fmt(m.cost || 0)} / unidade${costChanged ? ' ↑' : ''}</strong> <span>${fmtDate(m.date)} · ${m.qty} unidade${m.qty === 1 ? '' : 's'} entrada</span> </div> <div style="text-align:right;font-size:12px;color:var(--text-muted)">${costChanged ? fmt(prevCost) + ' → ' + fmt(m.cost) : fmt(m.cost)}</div> </div>`; }).join(''); }
+function selectEditProductKind(kind) { editProductKind = kind; const isUnit = kind === 'unitario'; document.getElementById('edit-prod-unitario').checked = isUnit; document.getElementById('edit-prod-kit').checked = !isUnit; document.getElementById('edit-card-unitario').classList.toggle('selected', isUnit); document.getElementById('edit-card-kit').classList.toggle('selected', !isUnit); }
+function openEditProductModal() { const sku = getCurrentSku(); if (!sku) return; document.getElementById('edit-prod-name').value = sku.name || ''; document.getElementById('edit-prod-sku').value = sku.code || ''; selectEditProductKind(sku.kind === 'kit' ? 'kit' : 'unitario'); openModal('edit-product'); }
+function closeEditProductModal() { closeModal('edit-product'); }
+async function saveEditedProduct() {
+  const name = document.getElementById('edit-prod-name').value.trim();
+  const code = document.getElementById('edit-prod-sku').value.trim();
+  if (!name || !code) { alert('Nome e SKU são obrigatórios.'); return; }
+  const skus = loadSkus();
+  const idx = skus.findIndex(s => idsMatch(s.id, currentProductId));
+  if (idx === -1) { alert('Produto não encontrado.'); return; }
+  const dup = skus.find(s => !idsMatch(s.id, currentProductId) && (s.code || '').toLowerCase() === code.toLowerCase());
+  if (dup) { alert('Já existe outro produto com este SKU.'); return; }
+
+  skus[idx].name = name;
+  skus[idx].code = code;
+  skus[idx].kind = editProductKind;
+  skus[idx].emoji = editProductKind === 'kit' ? '🧩' : (skus[idx].emoji || '📦');
+
+  const movs = loadMovs().map(m => idsMatch(m.skuId, currentProductId) ? { ...m, skuName: name } : m);
+
+  try {
+    await saveSkus(skus);
+    await saveMovs(movs);
+    closeEditProductModal();
+    renderProductDetail(); renderKpis(); renderTable(); renderDashboard();
+  } catch (err) { handleAsyncError(err, 'Erro ao salvar produto.'); }
+}
+function setDetailMovFilter(filter) { detailMovFilter = filter; renderProductDetail(); }
+function selectDetailTab(tab) { document.getElementById('tab-movs').classList.toggle('active', tab === 'movs'); document.getElementById('tab-costs').classList.toggle('active', tab === 'costs'); document.getElementById('detail-movs-tab').classList.toggle('hidden', tab !== 'movs'); document.getElementById('detail-costs-tab').classList.toggle('hidden', tab !== 'costs'); }
+function selectDetailMovType(type) { detailMovType = type; document.getElementById('prod-type-entrada').classList.toggle('selected', type === 'entrada'); document.getElementById('prod-type-saida').classList.toggle('selected', type === 'saida'); const costField = document.getElementById('prod-cost-field'); const costInput = document.getElementById('prod-mov-cost'); if (type === 'saida') { costField.style.display = 'none'; costInput.value = ''; } else { costField.style.display = ''; const sku = getCurrentSku(); if (sku) costInput.value = formatMoneyInputValue(sku.cost || 0); } }
+function openDetailMovModal() {
+  const sku = getCurrentSku();
+  if (!sku) { alert('Produto não encontrado.'); return; }
+
+  const qtyEl = document.getElementById('prod-mov-qty');
+  const costEl = document.getElementById('prod-mov-cost');
+  const reasonEl = document.getElementById('prod-mov-reason');
+  const notesEl = document.getElementById('prod-mov-notes');
+
+  if (qtyEl) qtyEl.value = 1;
+  if (costEl) costEl.value = formatMoneyInputValue(sku.cost || 0);
+  if (reasonEl) reasonEl.value = '';
+  if (notesEl) notesEl.value = '';
+
+  selectDetailMovType('entrada');
+  openModal('prod-mov');
+}
+function closeProductMovModal() { closeModal('prod-mov'); }
+async function saveDetailMovimentacao() {
+  const qty = parseInt(document.getElementById('prod-mov-qty').value, 10);
+  const sku = getCurrentSku();
+  if (!sku) { alert('Produto não encontrado.'); return; }
+
+  const costInput = document.getElementById('prod-mov-cost');
+  const reasonInput = document.getElementById('prod-mov-reason');
+  const notesInput = document.getElementById('prod-mov-notes');
+  const cost = detailMovType === 'entrada'
+    ? (parseMoneyInputValue(costInput ? costInput.value : '') || Number(sku.cost) || 0)
+    : (Number(sku.cost) || 0);
+  const reason = reasonInput ? reasonInput.value.trim() : '';
+  const notes = notesInput ? notesInput.value.trim() : '';
+
+  try {
+    const result = await createMovementForSku({
+      skuId: currentProductId,
+      type: detailMovType,
+      qty,
+      cost,
+      note: reason || (detailMovType === 'entrada' ? 'Entrada de estoque' : 'Saída de estoque'),
+      notes
+    });
+    if (!result.ok) { alert(result.message); return; }
+    closeProductMovModal();
+    renderProductDetail(); renderKpis(); renderTable(); renderDashboard();
+  } catch (err) { handleAsyncError(err, 'Erro ao salvar movimentação.'); }
+}
+async function createMovementForSku({ skuId, type, qty, cost = 0, note = '', notes = '' }) {
+  const sku = loadSkus().find(s => idsMatch(s.id, skuId));
+  if (!sku) return { ok: false, message: 'Produto não encontrado.' };
+  const movementQty = Number(qty) || 0;
+  const movementCost = Number(cost) || Number(sku.cost) || 0;
+  if (!movementQty || movementQty < 1) return { ok: false, message: 'Informe uma quantidade válida.' };
+  if (type === 'saida' && (Number(sku.qty) || 0) < movementQty) return { ok: false, message: `Estoque insuficiente! Disponível: ${sku.qty} unidades.` };
+
+  assertSupabase();
+  const { error } = await db.rpc('registrar_movimentacao', {
+    p_sku_id: skuId,
+    p_type: type,
+    p_qty: movementQty,
+    p_cost: movementCost,
+    p_note: note || '',
+    p_notes: notes || ''
+  });
+  if (error) return { ok: false, message: error.message };
+
+  await loadAllData();
+  const updatedSku = loadSkus().find(s => idsMatch(s.id, skuId));
+  return { ok: true, sku: updatedSku };
+}
+function getCurrentProductForDelete() { const skus = loadSkus(); if (currentProductId) { const f = skus.find(s => String(s.id) === String(currentProductId)); if (f) return f; } const el = document.getElementById('detail-sku'); if (el) { const code = el.textContent.trim(); const f = skus.find(s => String(s.code).trim() === code); if (f) { currentProductId = f.id; return f; } } return null; }
+function openDeleteProductModal() {
+  const sku = getCurrentProductForDelete();
+  if (!sku) { alert('Produto não encontrado para exclusão.'); return; }
+
+  const nameEl = document.getElementById('delete-product-name');
+  const skuEl = document.getElementById('delete-product-sku');
+  if (nameEl) nameEl.textContent = sku.name || 'Produto';
+  if (skuEl) skuEl.textContent = sku.code || '—';
+
+  openModal('delete-product');
+}
+function closeDeleteProductModal() { closeModal('delete-product'); }
+async function confirmDeleteProduct() {
+  const sku = getCurrentProductForDelete();
+  if (!sku) { closeDeleteProductModal(); alert('Produto não encontrado.'); return; }
+  const idToDelete = String(sku.id);
+  try {
+    await deleteById('produtos', 'skus', idToDelete);
+    appData.movs = appData.movs.filter(m => String(m.skuId) !== idToDelete);
+    currentProductId = null;
+    closeDeleteProductModal();
+    renderKpis(); renderTable(); renderDashboard(); navigate('estoque');
+  } catch (err) { handleAsyncError(err, 'Erro ao excluir produto.'); }
+}
+function renderKpis() { const skus = loadSkus(); const movs = loadMovs(); const units = skus.reduce((a, s) => a + s.qty, 0); const cost = skus.reduce((a, s) => a + s.qty * s.cost, 0); const zero = skus.filter(s => s.qty === 0).length; const now = new Date(); const monthIn = movs.filter(m => m.type === 'entrada' && new Date(m.date).getMonth() === now.getMonth()).reduce((a, m) => a + m.qty, 0); document.getElementById('kpi-units').textContent = units; document.getElementById('kpi-skus-sub').textContent = `Total de ${skus.length} SKUs`; document.getElementById('kpi-cost').textContent = fmt(cost); document.getElementById('kpi-zero').textContent = zero; document.getElementById('kpi-in').textContent = monthIn; const zeroAlert = document.getElementById('zero-alert'); if (zero > 0) { zeroAlert.style.display = ''; document.getElementById('zero-alert-msg').textContent = `Você tem ${zero} produto(s) sem estoque.`; } else { zeroAlert.style.display = 'none'; } }
+function renderDashboard() { const skus = loadSkus(); const movs = loadMovs(); document.getElementById('dash-skus').textContent = skus.length; document.getElementById('dash-units').textContent = skus.reduce((a, s) => a + s.qty, 0); document.getElementById('dash-cost').textContent = fmt(skus.reduce((a, s) => a + s.qty * s.cost, 0)); const recent = movs.slice(0, 8); const container = document.getElementById('dash-movs'); if (recent.length === 0) { container.innerHTML = `<div class="empty-state"><p>Nenhuma movimentação ainda.</p></div>`; return; } container.innerHTML = recent.map(m => ` <div class="mov-item"> <div class="mov-badge ${m.type === 'entrada' ? 'in' : 'out'}">${m.type === 'entrada' ? '📦' : '🚚'}</div> <div class="mov-info"> <div class="mov-name">${m.skuName}</div> <div class="mov-meta">${m.type === 'entrada' ? 'Entrada' : 'Saída'} · ${m.note || '—'}</div> </div> <div style="text-align:right"> <div class="mov-qty ${m.type === 'entrada' ? 'in' : 'out'}">${m.type === 'entrada' ? '+' : '-'}${m.qty} un</div> <div class="mov-date">${fmtDate(m.date)}</div> </div> </div>`).join(''); }
+
+// ─── COMPRAS ──────────────────────────────────────────────────────────────────
+function getCompraPaymentOptions() {
+  const cartoes = loadCartoes();
+  return [{ value: '', label: 'Caixa / Dinheiro' }].concat(
+    cartoes.map(c => ({
+      value: String(c.id || ''),
+      label: `${c.nome || 'Cartão'}${c.digitos ? ` (Final ${c.digitos})` : ''}`
+    }))
+  );
+}
+
+function syncCompraPaymentSelect(selectedValue = '') {
+  const normalizedValue = selectedValue === null || selectedValue === undefined ? '' : String(selectedValue);
+  rebuildCustomSelect('cs-compra-cartao', getCompraPaymentOptions(), normalizedValue);
+}
+
+function openCompraModal() {
+  editCompraId = null;
+  document.getElementById('modal-compra-title').textContent = 'Nova Compra';
+  document.getElementById('btn-save-compra').textContent = 'Registrar Compra';
+  ['compra-sku','compra-nome','compra-link','cat-nome','cat-link','compra-qty','compra-preco','compra-venda','compra-margem','compra-roi'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('compra-parcelas').value = 1; document.getElementById('compra-total-display').textContent = 'R$ 0,00';
+  syncCompraPaymentSelect('');
+  openModal('compra');
+}
+
+function openEditCompraModal(id) {
+  const compra = loadCompras().find(c => c.id === id);
+  if (!compra) return;
+  editCompraId = id;
+  document.getElementById('modal-compra-title').textContent = 'Editar Compra';
+  document.getElementById('btn-save-compra').textContent = 'Salvar Alterações';
+  syncCompraPaymentSelect(compra.cartaoId || '');
+  document.getElementById('compra-sku').value = compra.sku || ''; document.getElementById('compra-nome').value = compra.compraNome || '';
+  document.getElementById('compra-link').value = compra.compraLink || ''; document.getElementById('cat-nome').value = compra.catNome || '';
+  document.getElementById('cat-link').value = compra.catLink || ''; document.getElementById('compra-qty').value = compra.qty || '';
+  document.getElementById('compra-preco').value = formatMoneyInputValue(compra.preco || 0);
+  document.getElementById('compra-parcelas').value = compra.parcelas || 1; document.getElementById('compra-venda').value = formatMoneyInputValue(compra.venda || 0);
+  document.getElementById('compra-margem').value = compra.margem || ''; document.getElementById('compra-roi').value = compra.roi || '';
+  calcCompraTotal(); openModal('compra');
+}
+
+function calcCompraTotal() {
+  const qty = parseInt(document.getElementById('compra-qty').value) || 0;
+  const preco = parseMoneyInputValue(document.getElementById('compra-preco').value) || 0;
+  document.getElementById('compra-total-display').textContent = fmt(qty * preco);
+}
+
+async function saveCompra() {
+  const sku = document.getElementById('compra-sku').value.trim();
+  if (!sku) { alert('O SKU é obrigatório.'); return; }
+  const qty = parseInt(document.getElementById('compra-qty').value) || 0;
+  const preco = parseMoneyInputValue(document.getElementById('compra-preco').value) || 0;
+  const total = qty * preco;
+  const venda = parseMoneyInputValue(document.getElementById('compra-venda').value) || 0;
+  const cartaoId = document.getElementById('compra-cartao').value;
+  const parcelas = parseInt(document.getElementById('compra-parcelas').value) || 1;
+
+  const compras = loadCompras();
+  const cartoes = loadCartoes();
+
+  if (editCompraId) {
+    const cIndex = compras.findIndex(c => c.id === editCompraId);
+    if (cIndex !== -1) {
+      const oldCompra = compras[cIndex];
+      if (oldCompra.cartaoId) {
+        const oldCardIdx = cartoes.findIndex(c => c.id === oldCompra.cartaoId);
+        if (oldCardIdx !== -1) cartoes[oldCardIdx].utilizado = Math.max(0, (cartoes[oldCardIdx].utilizado || 0) - oldCompra.total);
+      }
+      if (cartaoId) {
+        const newCardIdx = cartoes.findIndex(c => c.id === cartaoId);
+        if (newCardIdx !== -1) cartoes[newCardIdx].utilizado = (cartoes[newCardIdx].utilizado || 0) + total;
+      }
+      compras[cIndex] = { ...oldCompra, sku, compraNome: document.getElementById('compra-nome').value.trim(), compraLink: document.getElementById('compra-link').value.trim(), catNome: document.getElementById('cat-nome').value.trim(), catLink: document.getElementById('cat-link').value.trim(), qty, preco, total, cartaoId, parcelas, venda, margem: document.getElementById('compra-margem').value.trim(), roi: document.getElementById('compra-roi').value.trim() };
+    }
+  } else {
+    if (cartaoId) {
+      const newCardIdx = cartoes.findIndex(c => c.id === cartaoId);
+      if (newCardIdx !== -1) cartoes[newCardIdx].utilizado = (cartoes[newCardIdx].utilizado || 0) + total;
+    }
+    compras.unshift({ id: makeId(), sku, compraNome: document.getElementById('compra-nome').value.trim(), compraLink: document.getElementById('compra-link').value.trim(), catNome: document.getElementById('cat-nome').value.trim(), catLink: document.getElementById('cat-link').value.trim(), qty, preco, total, cartaoId, parcelas, venda, margem: document.getElementById('compra-margem').value.trim(), roi: document.getElementById('compra-roi').value.trim(), date: new Date().toISOString() });
+  }
+
+  try {
+    await saveCartoes(cartoes);
+    await saveCompras(compras);
+    closeModal('compra'); renderCompras(); renderCartoes(); renderFinanceiro();
+  } catch (err) { handleAsyncError(err, 'Erro ao salvar compra.'); }
+}
+
+function deleteCompra(id) {
+  openConfirmacao({
+    titulo: 'Excluir compra',
+    subtitulo: 'Confirme para remover este registro.',
+    mensagem: 'Deseja realmente excluir este registro de compra? Esta ação não poderá ser desfeita.',
+    textoNao: 'Não, cancelar',
+    textoSim: 'Sim, excluir',
+    onConfirm: async () => {
+      const compras = loadCompras();
+      const compra = compras.find(c => c.id === id);
+      if (compra && compra.cartaoId) {
+        const cartoes = loadCartoes();
+        const cIndex = cartoes.findIndex(c => c.id === compra.cartaoId);
+        if (cIndex !== -1) {
+          cartoes[cIndex].utilizado = Math.max(0, (cartoes[cIndex].utilizado || 0) - compra.total);
+          await saveCartoes(cartoes);
+        }
+      }
+      await saveCompras(compras.filter(c => c.id !== id));
+      renderCartoes(); renderCompras(); renderFinanceiro();
+    }
+  });
+}
+
+function renderCompras() {
+  const compras = loadCompras(); const cartoes = loadCartoes(); const body = document.getElementById('compras-table-body');
+  if (compras.length === 0) { body.innerHTML = `<div class="empty-state"><p>Nenhum registro de compra encontrado.</p></div>`; return; }
+  
+  body.innerHTML = compras.map(c => {
+    let compraHTML = c.compraNome || '—'; if (c.compraLink) compraHTML = `<a href="${c.compraLink}" target="_blank" class="link-styled">${c.compraNome || 'Acessar Link'}</a>`;
+    let catHTML = c.catNome || '—'; if (c.catLink) catHTML = `<a href="${c.catLink}" target="_blank" class="link-styled">${c.catNome || 'Acessar Link'}</a>`;
+    
+    let pagamentoHTML = `<div style="font-size:11px;line-height:1.3"><strong>Caixa (Dinheiro)</strong></div>`;
+    if (c.cartaoId) {
+      const card = cartoes.find(card => card.id === c.cartaoId);
+      if (card) { pagamentoHTML = `<div style="font-size:11px;line-height:1.3"><strong>${card.nome}</strong><br><span style="color:var(--text-dim)">${c.parcelas > 1 ? c.parcelas + 'x sem juros' : 'À vista'}</span></div>`; } 
+      else { pagamentoHTML = `<span style="font-size:11px;color:var(--text-dim)">Cartão excluído</span>`; }
+    }
+
+    return `
+    <div class="table-row-compras">
+      <div style="font-weight:600">${c.sku}</div>
+      <div>${compraHTML}</div>
+      <div>${catHTML}</div>
+      <div style="font-weight:600">${c.qty}</div>
+      <div class="cell-muted">${fmt(c.preco)}</div>
+      <div style="font-weight:700;color:var(--green)">${fmt(c.total)}</div>
+      <div>${pagamentoHTML}</div>
+      <div class="cell-muted">${fmt(c.venda)}</div>
+      <div class="cell-muted">${c.margem || '—'}</div>
+      <div class="cell-muted">${c.roi || '—'}</div>
+      <div style="display:flex;gap:4px;align-items:center;">
+        <button class="icon-btn" style="color:var(--blue);border-color:transparent" onclick="openEditCompraModal('${c.id}')" title="Editar Compra">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+        </button>
+        <button class="icon-btn" style="color:var(--danger);border-color:transparent" onclick="deleteCompra('${c.id}')" title="Excluir">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── CARTÕES E GERENCIADOR DE FATURAS ────────────────────────────────────────
+function openCartaoModal() { editCartaoId = null; document.getElementById('modal-cartao-title').textContent = 'Adicionar Cartão'; document.getElementById('btn-save-cartao').textContent = 'Salvar Cartão'; ['cartao-nome','cartao-digitos','cartao-limite'].forEach(id => { document.getElementById(id).value = ''; }); openModal('cartao'); }
+function openEditCartaoModal(id) { const cartao = loadCartoes().find(c => String(c.id) === String(id)); if (!cartao) return; editCartaoId = id; document.getElementById('modal-cartao-title').textContent = 'Editar Cartão'; document.getElementById('btn-save-cartao').textContent = 'Salvar Alterações'; document.getElementById('cartao-nome').value = cartao.nome; document.getElementById('cartao-digitos').value = cartao.digitos; document.getElementById('cartao-limite').value = formatMoneyInputValue(cartao.limite); openModal('cartao'); }
+
+async function saveCartao() {
+  const nome = document.getElementById('cartao-nome').value.trim();
+  const digitos = document.getElementById('cartao-digitos').value.trim();
+  if (!nome || !digitos || digitos.length !== 4) { alert('Informe o apelido e os 4 últimos dígitos do cartão.'); return; }
+  const limite = parseMoneyInputValue(document.getElementById('cartao-limite').value);
+  const cartoes = loadCartoes();
+
+  if (editCartaoId) {
+    const idx = cartoes.findIndex(c => String(c.id) === String(editCartaoId));
+    if (idx !== -1) { cartoes[idx].nome = nome; cartoes[idx].digitos = digitos; cartoes[idx].limite = limite; }
+  } else {
+    cartoes.push({ id: makeId(), nome, digitos, limite, utilizado: 0, createdAt: new Date().toISOString() });
+  }
+
+  try {
+    await saveCartoes(cartoes);
+    closeModal('cartao');
+    syncCompraPaymentSelect(document.getElementById('compra-cartao') ? document.getElementById('compra-cartao').value : '');
+    renderCartoes(); renderFinanceiro(); renderCompras();
+  } catch (err) { handleAsyncError(err, 'Erro ao salvar cartão.'); }
+}
+
+function deleteCartao(id) {
+  openConfirmacao({
+    titulo: 'Excluir cartão',
+    subtitulo: 'Confirme para remover este cartão.',
+    mensagem: 'Deseja realmente excluir este cartão? As compras e lançamentos vinculados ficarão sem cartão vinculado.',
+    textoNao: 'Não, cancelar',
+    textoSim: 'Sim, excluir',
+    onConfirm: async () => {
+      await saveCartoes(loadCartoes().filter(c => String(c.id) !== String(id)));
+      await loadAllData();
+      syncCompraPaymentSelect(document.getElementById('compra-cartao') ? document.getElementById('compra-cartao').value : '');
+      renderCartoes(); renderFinanceiro(); renderCompras();
+    }
+  });
+}
+
+// Motor das Faturas
+function getCartaoFaturas(cartaoId) {
+  const compras = loadCompras().filter(c => c.cartaoId === cartaoId);
+  const pagamentos = loadFinanceiro().filter(l => l.tipo === 'fatura' && l.cartaoId === cartaoId);
+  let totalPago = pagamentos.reduce((a,b) => a + b.valor, 0);
+
+  const meses = {}; 
+  compras.forEach(c => {
+    const dataCompra = new Date(c.date);
+    const valParcela = c.total / c.parcelas;
+    for(let i=1; i<=c.parcelas; i++) {
+      let d = new Date(dataCompra.getFullYear(), dataCompra.getMonth() + i, 1);
+      let key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      if(!meses[key]) meses[key] = { total: 0, items: [] };
+      meses[key].total += valParcela;
+      meses[key].items.push({ nome: c.compraNome || c.sku, val: valParcela, num: i, de: c.parcelas });
+    }
+  });
+
+  const chavesOrdenadas = Object.keys(meses).sort();
+  const faturas = [];
+  let saldoPagoResidual = totalPago;
+
+  chavesOrdenadas.forEach(key => {
+    let totalMes = meses[key].total;
+    let pagoMes = 0;
+    if (saldoPagoResidual >= totalMes) { pagoMes = totalMes; saldoPagoResidual -= totalMes; } 
+    else if (saldoPagoResidual > 0) { pagoMes = saldoPagoResidual; saldoPagoResidual = 0; }
+
+    faturas.push({
+      mes: key, total: totalMes, pago: pagoMes, pendente: totalMes - pagoMes,
+      status: pagoMes >= totalMes ? 'pago' : (pagoMes > 0 ? 'parcial' : 'pendente')
+    });
+  });
+  return faturas;
+}
+
+function openFaturasModal(cartaoId) {
+  const cartao = loadCartoes().find(c => c.id === cartaoId);
+  if(!cartao) return;
+  document.getElementById('faturas-cartao-nome').textContent = `Faturas: ${cartao.nome}`;
+  const faturas = getCartaoFaturas(cartaoId);
+  const container = document.getElementById('faturas-list');
+  
+  if(faturas.length === 0) {
+    container.innerHTML = `<div class="empty-state" style="padding: 20px;"><p>Nenhuma compra parcelada ou fatura prevista.</p></div>`;
+  } else {
+    container.innerHTML = faturas.map(f => {
+      const isPago = f.status === 'pago';
+      const bg = isPago ? 'rgba(199,199,199,0.08)' : 'var(--surface2)';
+      const statusHtml = isPago ? `<span class="fatura-status pago">Pago</span>` : (f.status === 'parcial' ? `<span class="fatura-status parcial">Restam ${fmt(f.pendente)}</span>` : `<span class="fatura-status pendente">Pendente</span>`);
+      
+      let btnHtml = '';
+      if(!isPago) {
+        btnHtml = `<button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="payFaturaFromList('${cartao.id}', ${f.pendente}, 'Fatura ${formatMesAno(f.mes)} - ${cartao.nome}')">Pagar</button>`;
+      }
+
+      return `
+      <div class="fatura-card" style="background: ${bg}">
+        <div class="fatura-info">
+          <h4>${formatMesAno(f.mes)}</h4>
+          <p>Total: <strong>${fmt(f.total)}</strong></p>
+        </div>
+        <div style="display:flex; align-items:center; gap: 14px;">
+          ${statusHtml}
+          ${btnHtml}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  openModal('faturas');
+}
+
+function payFaturaFromList(cartaoId, valorPendente, desc) {
+  closeModal('faturas');
+  openFinanceiroModal();
+  selectFinType('fatura');
+  const card = loadCartoes().find(c => c.id === cartaoId);
+  rebuildCustomSelect('cs-fin-cartao', loadCartoes().map(c => ({ value: c.id, label: `${c.nome} (Final ${c.digitos})` })), cartaoId);
+  document.getElementById('fin-cartao').value = cartaoId;
+  document.getElementById('fin-valor').value = formatMoneyInputValue(valorPendente);
+  document.getElementById('fin-descricao').value = desc || (card ? `Fatura - ${card.nome}` : 'Pagamento de fatura');
+}
+
+function renderCartoes() {
+  const cartoes = loadCartoes();
+  const grid = document.getElementById('cartoes-grid');
+  if (!grid) return;
+
+  if (cartoes.length === 0) { grid.innerHTML = `<div class="empty-state" style="padding:30px 20px;grid-column:1/-1"><p>Nenhum cartão cadastrado.</p></div>`; return; }
+
+  grid.innerHTML = cartoes.map(c => {
+    const limite = c.limite || 0; const utilizado = c.utilizado || 0;
+    const disponivel = Math.max(0, limite - utilizado);
+    const pct = limite > 0 ? Math.min(100, (utilizado / limite) * 100) : 0;
+    const barColor = pct >= 90 ? 'var(--danger)' : pct >= 60 ? 'var(--yellow)' : 'var(--green)';
+
+    // Encontrar próxima fatura
+    const faturas = getCartaoFaturas(c.id);
+    const fPendente = faturas.find(f => f.pendente > 0);
+    const proxFaturaHtml = fPendente ? `<span style="color:var(--text);font-weight:700">${fmt(fPendente.pendente)} <span style="font-size:10px;color:var(--text-muted);font-weight:500">(${formatMesAno(fPendente.mes)})</span></span>` : `<span style="color:var(--text-dim)">Nenhuma</span>`;
+
+    return `
+    <div class="credit-card">
+      <div class="credit-card-header">
+        <div>
+          <div class="credit-card-name">${c.nome}</div>
+          <div class="credit-card-digits">•••• •••• •••• ${c.digitos}</div>
+        </div>
+        <div class="credit-card-actions">
+          <button class="credit-card-edit" onclick="openEditCartaoModal('${c.id}')" title="Editar cartão"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>
+          <button class="credit-card-delete" onclick="deleteCartao('${c.id}')" title="Remover cartão"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+        </div>
+      </div>
+
+      <div class="credit-card-values">
+        <div><div class="credit-card-val-label">Limite Total</div><div class="credit-card-val">${fmt(limite)}</div></div>
+        <div><div class="credit-card-val-label">Utilizado</div><div class="credit-card-val utilizado">${fmt(utilizado)}</div></div>
+        <div><div class="credit-card-val-label">Disponível</div><div class="credit-card-val disponivel">${fmt(disponivel)}</div></div>
+        <div><div class="credit-card-val-label">Uso</div><div class="credit-card-val" style="color:${barColor}">${pct.toFixed(1)}%</div></div>
+      </div>
+      <div class="usage-bar-wrap"><div class="usage-bar-track"><div class="usage-bar-fill" style="width:${pct}%;background:${barColor}"></div></div></div>
+      
+      <div style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 11px; color: var(--text-muted)">Próx. Vencimento: <br>${proxFaturaHtml}</div>
+        <button class="btn btn-ghost" style="padding: 5px 10px; font-size: 11px;" onclick="openFaturasModal('${c.id}')">Ver Faturas</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── FINANCEIRO E CAIXA ───────────────────────────────────────────────────────
+function selectFinType(type) {
+  finType = type;
+  document.getElementById('fin-type-receita').classList.toggle('selected', type === 'receita');
+  document.getElementById('fin-type-despesa').classList.toggle('selected', type === 'despesa');
+  document.getElementById('fin-type-fatura').classList.toggle('selected', type === 'fatura');
+
+  const pagWrap = document.getElementById('fin-pagamento-wrap');
+  const pagLabel = document.getElementById('fin-pagamento-label');
+  const cartaoSelect = document.getElementById('fin-cartao');
+  const csDropdown = document.getElementById('cs-fin-cartao-dropdown');
+
+  if (type === 'receita') {
+    pagWrap.style.display = 'none'; cartaoSelect.value = '';
+  } else if (type === 'despesa') {
+    pagWrap.style.display = ''; pagLabel.textContent = 'Forma de Pagamento';
+    // re-enable all custom options
+    if (csDropdown) csDropdown.querySelectorAll('.custom-select-option').forEach(o => o.style.display = '');
+    // pick Caixa/Dinheiro by default
+    const firstOpt = csDropdown && csDropdown.querySelector('.custom-select-option');
+    if (firstOpt) pickCustomSelect('cs-fin-cartao', '', 'Caixa / Dinheiro', firstOpt);
+  } else if (type === 'fatura') {
+    pagWrap.style.display = ''; pagLabel.textContent = 'Qual cartão está pagando?';
+    // hide "Caixa / Dinheiro" option in custom dropdown
+    if (csDropdown) {
+      const cashOpt = csDropdown.querySelector('[data-value=""]');
+      if (cashOpt) cashOpt.style.display = 'none';
+      const firstCard = csDropdown.querySelector('.custom-select-option:not([data-value=""])');
+      if (firstCard) { pickCustomSelect('cs-fin-cartao', firstCard.dataset.value, firstCard.textContent.trim(), firstCard); }
+    }
+  }
+}
+
+function openFinanceiroModal() {
+  const opts = [{value:'',label:'Caixa / Dinheiro'}].concat(loadCartoes().map(c => ({value:c.id,label:`${c.nome} (Final ${c.digitos})`})));
+  rebuildCustomSelect('cs-fin-cartao', opts, '');
+
+  finType = 'receita'; selectFinType('receita');
+  ['fin-descricao','fin-valor','fin-categoria'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('fin-data').value = new Date().toISOString().slice(0, 10);
+  openModal('financeiro');
+}
+
+async function saveFinanceiro() {
+  const descricao = document.getElementById('fin-descricao').value.trim();
+  if (!descricao) { alert('Descrição é obrigatória.'); return; }
+  const valor = parseMoneyInputValue(document.getElementById('fin-valor').value);
+  const cartaoId = document.getElementById('fin-cartao').value;
+  if (finType === 'fatura' && !cartaoId) { alert('Selecione o cartão para o qual você está pagando a fatura.'); return; }
+
+  const cartoes = loadCartoes();
+  if (cartaoId) {
+    const cIndex = cartoes.findIndex(c => c.id === cartaoId);
+    if (cIndex !== -1) {
+      if (finType === 'despesa') cartoes[cIndex].utilizado = (cartoes[cIndex].utilizado || 0) + valor;
+      else if (finType === 'fatura') cartoes[cIndex].utilizado = Math.max(0, (cartoes[cIndex].utilizado || 0) - valor);
+    }
+  }
+
+  const lancamentos = loadFinanceiro();
+  lancamentos.unshift({
+    id: makeId(), descricao, tipo: finType, valor, data: document.getElementById('fin-data').value,
+    categoria: document.getElementById('fin-categoria').value.trim(), cartaoId: (finType === 'receita') ? '' : cartaoId,
+    createdAt: new Date().toISOString()
+  });
+
+  try {
+    await saveCartoes(cartoes);
+    await saveFinanceiro2(lancamentos);
+    closeModal('financeiro'); renderFinanceiro(); renderCartoes();
+  } catch (err) { handleAsyncError(err, 'Erro ao salvar lançamento financeiro.'); }
+}
+
+function deleteFinanceiro(id) {
+  openConfirmacao({
+    titulo: 'Excluir lançamento',
+    subtitulo: 'Confirme para remover este lançamento financeiro.',
+    mensagem: 'Deseja realmente excluir este lançamento? Esta ação ajustará os valores vinculados ao cartão, quando houver.',
+    textoNao: 'Não, cancelar',
+    textoSim: 'Sim, excluir',
+    onConfirm: async () => {
+      const lancamentos = loadFinanceiro();
+      const l = lancamentos.find(x => x.id === id);
+      if (l && l.cartaoId) {
+        const cartoes = loadCartoes();
+        const cIndex = cartoes.findIndex(c => c.id === l.cartaoId);
+        if (cIndex !== -1) {
+          if (l.tipo === 'despesa') cartoes[cIndex].utilizado = Math.max(0, (cartoes[cIndex].utilizado || 0) - l.valor);
+          else if (l.tipo === 'fatura') cartoes[cIndex].utilizado = (cartoes[cIndex].utilizado || 0) + l.valor;
+          await saveCartoes(cartoes);
+        }
+      }
+      await saveFinanceiro2(lancamentos.filter(x => x.id !== id));
+      renderFinanceiro(); renderCartoes();
+    }
+  });
+}
+
+function renderFinanceiro() {
+  const lancamentos = loadFinanceiro(); const compras = loadCompras(); const cartoes = loadCartoes();
+  const receitas = lancamentos.filter(l => l.tipo === 'receita').reduce((a, l) => a + l.valor, 0);
+  const despesasLancamentos = lancamentos.filter(l => l.tipo === 'despesa').reduce((a, l) => a + l.valor, 0);
+  const despesasCompras = compras.reduce((a, c) => a + (c.total || 0), 0);
+  const despesasGlobais = despesasLancamentos + despesasCompras;
+  const saldoCaixa = receitas - despesasGlobais;
+
+  document.getElementById('fin-receitas').textContent = fmt(receitas);
+  document.getElementById('fin-despesas').textContent = fmt(despesasGlobais);
+  const caixaEl = document.getElementById('fin-caixa'); caixaEl.textContent = fmt(saldoCaixa); caixaEl.style.color = saldoCaixa >= 0 ? 'var(--green)' : 'var(--danger)';
+
+  const body = document.getElementById('financeiro-table-body');
+  if (lancamentos.length === 0) { body.innerHTML = `<div class="empty-state"><p>Nenhum lançamento registrado.</p></div>`; return; }
+
+  body.innerHTML = lancamentos.map(l => {
+    let tipoTag = ''; let cor = ''; let sinal = '';
+    if (l.tipo === 'receita') { tipoTag = '💰 Receita'; cor = 'var(--green)'; sinal = '+'; }
+    else if (l.tipo === 'despesa') { tipoTag = '💸 Despesa'; cor = 'var(--danger)'; sinal = '-'; }
+    else if (l.tipo === 'fatura') { tipoTag = '💳 Fatura'; cor = 'var(--blue)'; sinal = '-'; } 
+
+    const dataFmt = l.data ? new Date(l.data + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+    let pagInfo = 'Caixa (Dinheiro)';
+    if (l.cartaoId) { const card = cartoes.find(c => c.id === l.cartaoId); pagInfo = card ? `💳 ${card.nome}` : 'Cartão excluído'; }
+    if (l.tipo === 'receita') pagInfo = '—'; 
+
+    return `
+    <div class="table-row-financeiro">
+      <div style="font-weight:500">${l.descricao}</div>
+      <div class="cell-muted">${dataFmt}</div>
+      <div><span class="tag" style="background:rgba(150,150,150,0.1);color:${cor}">${tipoTag}</span></div>
+      <div class="cell-muted">${l.categoria || '—'}</div>
+      <div style="font-weight:700;color:${cor}">${sinal} ${fmt(l.valor)}</div>
+      <div class="cell-muted" style="font-size:12px">${pagInfo}</div>
+      <div>
+        <button class="icon-btn" style="color:var(--danger);border-color:transparent" onclick="deleteFinanceiro('${l.id}')" title="Excluir">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+// ── CUSTOM SELECT ENGINE ──
+function toggleCustomSelect(id) {
+  const wrap = document.getElementById(id);
+  const isOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.custom-select-wrap.open').forEach(el => el.classList.remove('open'));
+  if (!isOpen) wrap.classList.add('open');
+}
+function pickCustomSelect(id, value, label, optEl) {
+  const wrap = document.getElementById(id);
+  document.getElementById(id + '-label').textContent = label;
+  wrap.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+  optEl.classList.add('selected');
+  const realId = id.slice(3); // 'cs-foo' -> 'foo'
+  const real = document.getElementById(realId);
+  if (real) { real.value = value; real.dispatchEvent(new Event('change')); }
+  wrap.classList.remove('open');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.custom-select-wrap')) {
+    document.querySelectorAll('.custom-select-wrap.open').forEach(el => el.classList.remove('open'));
+  }
+});
+// Rebuild a custom dropdown from options array [{value, label}] and set selectedValue
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+}
+
+function rebuildCustomSelect(csId, options, selectedValue) {
+  const dropdown = document.getElementById(csId + '-dropdown');
+  const labelEl = document.getElementById(csId + '-label');
+  if (!dropdown) return;
+
+  const normalizedSelected = selectedValue === null || selectedValue === undefined ? '' : String(selectedValue);
+  const safeOptions = (options || []).map(opt => ({
+    value: opt.value === null || opt.value === undefined ? '' : String(opt.value),
+    label: opt.label === null || opt.label === undefined ? '' : String(opt.label)
+  }));
+
+  dropdown.innerHTML = safeOptions.map(opt => {
+    const sel = opt.value === normalizedSelected;
+    const valueArg = JSON.stringify(opt.value).replace(/'/g, '&#39;');
+    const labelArg = JSON.stringify(opt.label).replace(/'/g, '&#39;');
+    return `<div class="custom-select-option${sel ? ' selected' : ''}" data-value="${escapeHtml(opt.value)}" onclick='pickCustomSelect("${csId}",${valueArg},${labelArg},this)'><span class="opt-check"></span>${escapeHtml(opt.label)}</div>`;
+  }).join('');
+
+  const active = safeOptions.find(o => o.value === normalizedSelected) || safeOptions[0];
+  if (labelEl && active) labelEl.textContent = active.label;
+
+  const realId = csId.slice(3);
+  const real = document.getElementById(realId);
+  if (real) {
+    real.innerHTML = safeOptions.map(o => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`).join('');
+    real.value = active ? active.value : '';
+  }
+}
+
+async function initApp() {
+  const dashDate = document.getElementById('dash-date');
+  if (dashDate) {
+    dashDate.textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  }
+  await loadAllData();
+  navigate('dashboard');
+}
+
+initApp();
+</script>
+
+</body>
+</html>
