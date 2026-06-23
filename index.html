@@ -605,12 +605,12 @@
           <div class="kpi-card">
             <div class="kpi-label">Total Despesas</div>
             <div class="kpi-value" id="fin-despesas" style="color:var(--danger)">R$ 0,00</div>
-            <div class="kpi-sub">inclui compras + cartões</div>
+            <div class="kpi-sub">somente caixa/dinheiro</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Saldo em Caixa</div>
             <div class="kpi-value" id="fin-caixa">R$ 0,00</div>
-            <div class="kpi-sub">receitas − despesas totais</div>
+            <div class="kpi-sub">receitas − saídas em caixa</div>
           </div>
         </div>
 
@@ -854,13 +854,13 @@
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Quantidade</label>
-        <input class="form-input" id="compra-qty" placeholder="0" type="number" min="1" oninput="calcCompraTotal()">
+        <input class="form-input" id="compra-qty" placeholder="0" type="number" min="1" oninput="calcCompraUnitPrice()">
       </div>
       <div class="form-group">
-        <label class="form-label">Preço Unitário</label>
+        <label class="form-label">Preço de Custo por Und (Automático)</label>
         <div class="form-prefix">
           <span>R$</span>
-          <input id="compra-preco" placeholder="0,00" type="text" inputmode="numeric" oninput="formatMoneyField(this); calcCompraTotal()">
+          <input id="compra-preco" placeholder="0,00" type="text" inputmode="numeric" readonly style="opacity:.75; cursor:not-allowed;">
         </div>
       </div>
     </div>
@@ -885,9 +885,13 @@
         <input class="form-input" id="compra-parcelas" placeholder="Ex: 3" type="number" min="1" value="1">
       </div>
     </div>
-    <div class="form-group" style="background: var(--surface2); padding: 14px 16px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-      <label class="form-label" style="margin: 0;">Valor Total (Automático)</label>
-      <div id="compra-total-display" style="font-size: 18px; font-weight: 700; color: var(--green);">R$ 0,00</div>
+    <div class="form-group" style="background: var(--surface2); padding: 14px 16px; border-radius: 8px; border: 1px solid var(--border);">
+      <label class="form-label">Valor Total da Compra</label>
+      <div class="form-prefix">
+        <span>R$</span>
+        <input id="compra-total" placeholder="0,00" type="text" inputmode="numeric" oninput="formatMoneyField(this); calcCompraUnitPrice()">
+      </div>
+      <div class="cell-muted" style="margin-top:8px;font-size:12px">O preço unitário será calculado automaticamente: valor total ÷ quantidade.</div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -1555,8 +1559,8 @@ function openCompraModal() {
   editCompraId = null;
   document.getElementById('modal-compra-title').textContent = 'Nova Compra';
   document.getElementById('btn-save-compra').textContent = 'Registrar Compra';
-  ['compra-sku','compra-nome','compra-link','cat-nome','cat-link','compra-qty','compra-preco','compra-venda','compra-margem','compra-roi'].forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('compra-parcelas').value = 1; document.getElementById('compra-total-display').textContent = 'R$ 0,00';
+  ['compra-sku','compra-nome','compra-link','cat-nome','cat-link','compra-qty','compra-total','compra-preco','compra-venda','compra-margem','compra-roi'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('compra-parcelas').value = 1; calcCompraUnitPrice();
   syncCompraPaymentSelect('');
   openModal('compra');
 }
@@ -1571,24 +1575,31 @@ function openEditCompraModal(id) {
   document.getElementById('compra-sku').value = compra.sku || ''; document.getElementById('compra-nome').value = compra.compraNome || '';
   document.getElementById('compra-link').value = compra.compraLink || ''; document.getElementById('cat-nome').value = compra.catNome || '';
   document.getElementById('cat-link').value = compra.catLink || ''; document.getElementById('compra-qty').value = compra.qty || '';
+  document.getElementById('compra-total').value = formatMoneyInputValue(compra.total || ((compra.qty || 0) * (compra.preco || 0)));
   document.getElementById('compra-preco').value = formatMoneyInputValue(compra.preco || 0);
   document.getElementById('compra-parcelas').value = compra.parcelas || 1; document.getElementById('compra-venda').value = formatMoneyInputValue(compra.venda || 0);
   document.getElementById('compra-margem').value = compra.margem || ''; document.getElementById('compra-roi').value = compra.roi || '';
-  calcCompraTotal(); openModal('compra');
+  calcCompraUnitPrice(); openModal('compra');
 }
 
-function calcCompraTotal() {
+function calcCompraUnitPrice() {
   const qty = parseInt(document.getElementById('compra-qty').value) || 0;
-  const preco = parseMoneyInputValue(document.getElementById('compra-preco').value) || 0;
-  document.getElementById('compra-total-display').textContent = fmt(qty * preco);
+  const total = parseMoneyInputValue(document.getElementById('compra-total').value) || 0;
+  const precoUnitario = qty > 0 ? total / qty : 0;
+  document.getElementById('compra-preco').value = precoUnitario > 0 ? formatMoneyInputValue(precoUnitario) : '';
 }
+
+// Compatibilidade com chamadas antigas
+function calcCompraTotal() { calcCompraUnitPrice(); }
 
 async function saveCompra() {
   const sku = document.getElementById('compra-sku').value.trim();
   if (!sku) { alert('O SKU é obrigatório.'); return; }
   const qty = parseInt(document.getElementById('compra-qty').value) || 0;
-  const preco = parseMoneyInputValue(document.getElementById('compra-preco').value) || 0;
-  const total = qty * preco;
+  if (qty <= 0) { alert('A quantidade deve ser maior que zero.'); return; }
+  const total = parseMoneyInputValue(document.getElementById('compra-total').value) || 0;
+  if (total < 0) { alert('O valor total não pode ser negativo.'); return; }
+  const preco = qty > 0 ? total / qty : 0;
   const venda = parseMoneyInputValue(document.getElementById('compra-venda').value) || 0;
   const cartaoId = document.getElementById('compra-cartao').value;
   const parcelas = parseInt(document.getElementById('compra-parcelas').value) || 1;
@@ -1962,8 +1973,11 @@ function deleteFinanceiro(id) {
 function renderFinanceiro() {
   const lancamentos = loadFinanceiro(); const compras = loadCompras(); const cartoes = loadCartoes();
   const receitas = lancamentos.filter(l => l.tipo === 'receita').reduce((a, l) => a + l.valor, 0);
-  const despesasLancamentos = lancamentos.filter(l => l.tipo === 'despesa').reduce((a, l) => a + l.valor, 0);
-  const despesasCompras = compras.reduce((a, c) => a + (c.total || 0), 0);
+  // Fluxo de caixa considera apenas operações pagas em caixa/dinheiro.
+  // Compras e despesas vinculadas a cartão entram no limite/utilizado do cartão,
+  // mas não reduzem o caixa imediatamente.
+  const despesasLancamentos = lancamentos.filter(l => l.tipo === 'despesa' && !l.cartaoId).reduce((a, l) => a + l.valor, 0);
+  const despesasCompras = compras.filter(c => !c.cartaoId).reduce((a, c) => a + (c.total || 0), 0);
   const despesasGlobais = despesasLancamentos + despesasCompras;
   const saldoCaixa = receitas - despesasGlobais;
 
