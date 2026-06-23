@@ -178,9 +178,20 @@
   .form-prefix input { border: none; background: none; padding: 10px 13px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; width: 100%; }
   .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
 
+
+  /* ── TABLE LOGS ── */
+  .table-head-logs { display: grid; grid-template-columns: 150px 110px 110px minmax(260px,1fr) 170px; column-gap: 14px; padding: 12px 22px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; min-width: 900px; align-items: center; }
+  .table-row-logs { display: grid; grid-template-columns: 150px 110px 110px minmax(260px,1fr) 170px; column-gap: 14px; padding: 14px 22px; border-bottom: 1px solid var(--border); align-items: center; transition: background 0.12s; min-width: 900px; }
+  .table-row-logs:last-child { border-bottom: none; }
+  .table-row-logs:hover { background: rgba(255,255,255,0.02); }
+  .log-action { display: inline-flex; width: fit-content; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; background: rgba(156,163,175,0.16); color: var(--accent); }
+  .log-action.insert { background: rgba(199,199,199,0.14); color: var(--green); }
+  .log-action.update { background: rgba(168,168,168,0.14); color: var(--yellow); }
+  .log-action.delete { background: rgba(161,161,170,0.14); color: var(--danger); }
+
   /* ── PÁGINAS ── */
-  #page-dashboard, #page-estoque, #page-produto-detalhe, #page-compras { display: none; }
-  #page-dashboard.active, #page-estoque.active, #page-produto-detalhe.active, #page-compras.active { display: block; }
+  #page-dashboard, #page-estoque, #page-produto-detalhe, #page-compras, #page-logs { display: none; }
+  #page-dashboard.active, #page-estoque.active, #page-produto-detalhe.active, #page-compras.active, #page-logs.active { display: block; }
   #subpage-compras, #subpage-financeiro { display: none; }
   #subpage-compras.active, #subpage-financeiro.active { display: block; }
 
@@ -387,6 +398,10 @@
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke-width="1.8"/></svg>
       Dashboard
     </a>
+    <a class="nav-item" id="nav-logs" onclick="navigate('logs'); closeSidebar()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6M8 4h8a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 012-2z"/></svg>
+      Logs
+    </a>
 
     <div class="nav-section-label">Operação</div>
     <a class="nav-item" onclick="toggleSubmenu('produtos-sub')">
@@ -458,6 +473,58 @@
       </div>
       <div id="dash-movs">
         <div class="empty-state"><p>Nenhuma movimentação ainda.</p></div>
+      </div>
+    </div>
+
+
+    <div id="page-logs">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>Logs do Sistema</h1>
+          <p>Auditoria completa de cadastros, edições, exclusões e movimentações.</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost" onclick="refreshLogs()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M20 9A8 8 0 006.35 4.35M4 15a8 8 0 0013.65 4.65"/></svg>
+            Atualizar
+          </button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi-card">
+          <div class="kpi-label">Total de Logs</div>
+          <div class="kpi-value" id="logs-total">0</div>
+          <div class="kpi-sub">ações registradas</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Cadastros</div>
+          <div class="kpi-value" id="logs-inserts">0</div>
+          <div class="kpi-sub">novos registros</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Atualizações</div>
+          <div class="kpi-value" id="logs-updates">0</div>
+          <div class="kpi-sub">alterações feitas</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Exclusões</div>
+          <div class="kpi-value" id="logs-deletes">0</div>
+          <div class="kpi-sub">registros removidos</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head-logs">
+          <div>Data/Hora</div>
+          <div>Ação</div>
+          <div>Tabela</div>
+          <div>Descrição</div>
+          <div>Registro</div>
+        </div>
+        <div id="logs-table-body">
+          <div class="empty-state"><p>Nenhum log encontrado.</p></div>
+        </div>
       </div>
     </div>
 
@@ -1048,7 +1115,8 @@ const appData = {
   movs: [],
   compras: [],
   financeiro: [],
-  cartoes: []
+  cartoes: [],
+  logs: []
 };
 
 function cloneRows(rows) { return (rows || []).map(r => ({ ...r })); }
@@ -1057,6 +1125,7 @@ function loadMovs() { return cloneRows(appData.movs); }
 function loadCompras() { return cloneRows(appData.compras); }
 function loadFinanceiro() { return cloneRows(appData.financeiro); }
 function loadCartoes() { return cloneRows(appData.cartoes); }
+function loadLogs() { return cloneRows(appData.logs); }
 
 function makeId() {
   if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
@@ -1144,6 +1213,14 @@ function mapLancFromDb(r) {
 function mapLancToDb(l) {
   return { id: l.id || makeId(), descricao: cleanText(l.descricao), tipo: l.tipo, valor: n(l.valor), data: l.data || new Date().toISOString().slice(0, 10), categoria: cleanText(l.categoria), cartao_id: nullableUuid(l.cartaoId) };
 }
+function mapLogFromDb(r) {
+  return {
+    id: r.id, tabela: cleanText(r.tabela), acao: cleanText(r.acao), registroId: cleanText(r.registro_id),
+    descricao: cleanText(r.descricao), dadosAnteriores: r.dados_anteriores || null, dadosNovos: r.dados_novos || null,
+    usuarioId: r.usuario_id || '', usuarioRole: cleanText(r.usuario_role), origem: cleanText(r.origem, 'app'),
+    createdAt: r.created_at
+  };
+}
 
 async function fetchTable(table, orderColumn = 'created_at', ascending = true) {
   assertSupabase();
@@ -1175,6 +1252,14 @@ async function loadAllData() {
     appData.compras = compras.map(mapCompraFromDb);
     appData.cartoes = cartoes.map(mapCartaoFromDb);
     appData.financeiro = lancamentos.map(mapLancFromDb);
+
+    try {
+      const logs = await fetchTable('system_logs', 'created_at', false);
+      appData.logs = logs.map(mapLogFromDb);
+    } catch (logErr) {
+      console.warn('Tabela de logs ainda não encontrada ou sem permissão.', logErr);
+      appData.logs = [];
+    }
   } catch (err) {
     handleAsyncError(err, 'Não foi possível carregar os dados do Supabase.');
   }
@@ -1233,6 +1318,7 @@ function navigate(page) {
   if (page === 'dashboard') { document.getElementById('nav-dashboard').classList.add('active'); document.getElementById('page-dashboard').classList.add('active'); renderDashboard(); }
   else if (page === 'estoque') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-estoque').classList.add('active'); renderKpis(); renderTable(); }
   else if (page === 'produto-detalhe') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-produto-detalhe').classList.add('active'); renderProductDetail(); }
+  else if (page === 'logs') { document.getElementById('nav-logs').classList.add('active'); document.getElementById('page-logs').classList.add('active'); refreshLogs({ silent: true }); }
   else if (page === 'compras') { document.getElementById('nav-compras').classList.add('active'); document.getElementById('page-compras').classList.add('active'); switchSubpage(currentSubpage); }
 }
 function toggleSubmenu(id) {
@@ -1916,6 +2002,58 @@ function renderFinanceiro() {
   }).join('');
 }
 // ── CUSTOM SELECT ENGINE ──
+
+// ─── LOGS DO SISTEMA ────────────────────────────────────────────────────────
+async function refreshLogs(options = {}) {
+  const silent = Boolean(options.silent);
+  try {
+    assertSupabase();
+    const logs = await fetchTable('system_logs', 'created_at', false);
+    appData.logs = logs.map(mapLogFromDb);
+    renderLogsFromCache();
+  } catch (err) {
+    console.warn(err);
+    if (!silent) handleAsyncError(err, 'Não foi possível carregar os logs do sistema. Verifique se a tabela system_logs foi criada.');
+    renderLogsFromCache();
+  }
+}
+
+function renderLogsFromCache() {
+  const logs = loadLogs();
+  const totalEl = document.getElementById('logs-total');
+  if (!totalEl) return;
+
+  const inserts = logs.filter(l => l.acao === 'INSERT').length;
+  const updates = logs.filter(l => l.acao === 'UPDATE').length;
+  const deletes = logs.filter(l => l.acao === 'DELETE').length;
+
+  document.getElementById('logs-total').textContent = logs.length;
+  document.getElementById('logs-inserts').textContent = inserts;
+  document.getElementById('logs-updates').textContent = updates;
+  document.getElementById('logs-deletes').textContent = deletes;
+
+  const body = document.getElementById('logs-table-body');
+  if (!body) return;
+
+  if (!logs.length) {
+    body.innerHTML = `<div class="empty-state"><p>Nenhum log encontrado. Execute o SQL de auditoria e faça uma ação no sistema.</p></div>`;
+    return;
+  }
+
+  body.innerHTML = logs.slice(0, 300).map(l => {
+    const actionClass = l.acao === 'INSERT' ? 'insert' : l.acao === 'UPDATE' ? 'update' : l.acao === 'DELETE' ? 'delete' : '';
+    const actionLabel = l.acao === 'INSERT' ? 'Cadastro' : l.acao === 'UPDATE' ? 'Edição' : l.acao === 'DELETE' ? 'Exclusão' : l.acao;
+    return `
+      <div class="table-row-logs">
+        <div class="cell-muted">${fmtDate(l.createdAt)}</div>
+        <div><span class="log-action ${actionClass}">${escapeHtml(actionLabel)}</span></div>
+        <div class="cell-muted">${escapeHtml(l.tabela)}</div>
+        <div>${escapeHtml(l.descricao || 'Ação registrada')}</div>
+        <div class="cell-muted" title="${escapeHtml(l.registroId || '')}">${escapeHtml((l.registroId || '—').slice(0, 18))}${l.registroId && l.registroId.length > 18 ? '…' : ''}</div>
+      </div>`;
+  }).join('');
+}
+
 function toggleCustomSelect(id) {
   const wrap = document.getElementById(id);
   const isOpen = wrap.classList.contains('open');
