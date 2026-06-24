@@ -1190,12 +1190,17 @@
       <label class="form-label">SKU do Produto</label>
       <div class="custom-select-wrap" id="cs-compra-sku">
         <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-compra-sku')">
-          <span class="custom-select-trigger-text" id="cs-compra-sku-label">Selecione um produto...</span>
+          <span class="custom-select-trigger-text" id="cs-compra-sku-label">Selecione um SKU cadastrado...</span>
         </div>
         <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
         <div class="custom-select-dropdown" id="cs-compra-sku-dropdown"></div>
       </div>
-      <select id="compra-sku" style="display:none"></select>
+      <select id="compra-sku-select" style="display:none"></select>
+      <div id="compra-sku-manual-wrap" style="display:none; margin-top:8px;">
+        <input class="form-input" id="compra-sku" placeholder="Digite o novo SKU manualmente..." type="text">
+        <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">⚠️ SKU não encontrado nos cadastros. Será registrado como novo.</div>
+      </div>
+      <input type="hidden" id="compra-sku-hidden">
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -2039,16 +2044,52 @@ function syncCompraPaymentSelect(selectedValue = '') {
 
 /* ── SKU CUSTOM SELECT (modal compra) ── */
 function getSkuSelectOptions() {
-  return loadSkus().map(s => ({
-    value: s.code,
-    label: `${s.emoji || '📦'} ${s.name} — ${s.code}`
-  }));
+  const skus = loadSkus();
+  const opts = skus.map(s => ({ value: s.code, label: `${s.code} — ${s.name}` }));
+  return [
+    { value: '__novo__', label: '+ Inserir SKU manualmente...' },
+    ...opts
+  ];
 }
 
 function syncCompraSkuSelect(code) {
   const opts = getSkuSelectOptions();
-  const placeholder = [{ value: '', label: 'Selecione um produto...' }];
-  rebuildCustomSelect('cs-compra-sku', [...placeholder, ...opts], code || '');
+  rebuildCustomSelect('cs-compra-sku', opts, code || '');
+  // Se vier um code que não existe nos SKUs cadastrados, mostra campo manual
+  const exists = loadSkus().some(s => s.code === code);
+  if (code && !exists) {
+    showSkuManualInput(code);
+  } else {
+    hideSkuManualInput();
+  }
+}
+
+function pickCompraSkuOption(value) {
+  if (value === '__novo__') {
+    showSkuManualInput('');
+  } else {
+    hideSkuManualInput();
+    document.getElementById('compra-sku-hidden').value = value;
+  }
+}
+
+function showSkuManualInput(prefill) {
+  document.getElementById('compra-sku-manual-wrap').style.display = 'block';
+  document.getElementById('compra-sku').value = prefill || '';
+  document.getElementById('compra-sku-hidden').value = '';
+}
+
+function hideSkuManualInput() {
+  document.getElementById('compra-sku-manual-wrap').style.display = 'none';
+  document.getElementById('compra-sku').value = '';
+}
+
+function getCompraSkuValue() {
+  const manualWrap = document.getElementById('compra-sku-manual-wrap');
+  if (manualWrap.style.display !== 'none') {
+    return document.getElementById('compra-sku').value.trim();
+  }
+  return document.getElementById('compra-sku-hidden').value.trim();
 }
 
 function openCompraModal() {
@@ -2056,6 +2097,8 @@ function openCompraModal() {
   document.getElementById('modal-compra-title').textContent = 'Nova Compra';
   document.getElementById('btn-save-compra').textContent = 'Registrar Compra';
   ['compra-nome','compra-link','cat-nome','cat-link','compra-qty','compra-total','compra-preco','compra-venda','compra-margem','compra-roi'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('compra-sku-hidden').value = '';
+  hideSkuManualInput();
   document.getElementById('compra-parcelas').value = 1; calcCompraUnitPrice();
   syncCompraPaymentSelect('');
   syncCompraSkuSelect('');
@@ -2090,8 +2133,8 @@ function calcCompraUnitPrice() {
 function calcCompraTotal() { calcCompraUnitPrice(); }
 
 async function saveCompra() {
-  const sku = document.getElementById('compra-sku').value.trim();
-  if (!sku) { showToast('warning', 'Campo obrigatório', 'Selecione um produto (SKU).'); return; }
+  const sku = getCompraSkuValue();
+  if (!sku) { showToast('warning', 'Campo obrigatório', 'Selecione ou informe um SKU.'); return; }
 
   const qty = parseInt(document.getElementById('compra-qty').value) || 0;
   if (qty <= 0) { showToast('warning', 'Quantidade inválida', 'A quantidade deve ser maior que zero.'); return; }
@@ -2782,6 +2825,8 @@ function pickCustomSelect(id, value, label, optEl) {
   const real = document.getElementById(realId);
   if (real) { real.value = value; real.dispatchEvent(new Event('change')); }
   wrap.classList.remove('open');
+  // Hook especial para SKU de compra
+  if (id === 'cs-compra-sku') pickCompraSkuOption(value);
 }
 document.addEventListener('click', function(e) {
   if (!e.target.closest('.custom-select-wrap')) {
