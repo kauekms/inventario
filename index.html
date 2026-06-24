@@ -1188,7 +1188,14 @@
     </div>
     <div class="form-group">
       <label class="form-label">SKU do Produto</label>
-      <input class="form-input" id="compra-sku" placeholder="Ex: PROD-123" type="text">
+      <div class="custom-select-wrap" id="cs-compra-sku">
+        <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-compra-sku')">
+          <span class="custom-select-trigger-text" id="cs-compra-sku-label">Selecione um produto...</span>
+        </div>
+        <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+        <div class="custom-select-dropdown" id="cs-compra-sku-dropdown"></div>
+      </div>
+      <select id="compra-sku" style="display:none"></select>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -2030,13 +2037,28 @@ function syncCompraPaymentSelect(selectedValue = '') {
   rebuildCustomSelect('cs-compra-cartao', getCompraPaymentOptions(), normalizedValue);
 }
 
+/* ── SKU CUSTOM SELECT (modal compra) ── */
+function getSkuSelectOptions() {
+  return loadSkus().map(s => ({
+    value: s.code,
+    label: `${s.emoji || '📦'} ${s.name} — ${s.code}`
+  }));
+}
+
+function syncCompraSkuSelect(code) {
+  const opts = getSkuSelectOptions();
+  const placeholder = [{ value: '', label: 'Selecione um produto...' }];
+  rebuildCustomSelect('cs-compra-sku', [...placeholder, ...opts], code || '');
+}
+
 function openCompraModal() {
   editCompraId = null;
   document.getElementById('modal-compra-title').textContent = 'Nova Compra';
   document.getElementById('btn-save-compra').textContent = 'Registrar Compra';
-  ['compra-sku','compra-nome','compra-link','cat-nome','cat-link','compra-qty','compra-total','compra-preco','compra-venda','compra-margem','compra-roi'].forEach(id => { document.getElementById(id).value = ''; });
+  ['compra-nome','compra-link','cat-nome','cat-link','compra-qty','compra-total','compra-preco','compra-venda','compra-margem','compra-roi'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('compra-parcelas').value = 1; calcCompraUnitPrice();
   syncCompraPaymentSelect('');
+  syncCompraSkuSelect('');
   openModal('compra');
 }
 
@@ -2047,7 +2069,8 @@ function openEditCompraModal(id) {
   document.getElementById('modal-compra-title').textContent = 'Editar Compra';
   document.getElementById('btn-save-compra').textContent = 'Salvar Alterações';
   syncCompraPaymentSelect(compra.cartaoId || '');
-  document.getElementById('compra-sku').value = compra.sku || ''; document.getElementById('compra-nome').value = compra.compraNome || '';
+  syncCompraSkuSelect(compra.sku || '');
+  document.getElementById('compra-nome').value = compra.compraNome || '';
   document.getElementById('compra-link').value = compra.compraLink || ''; document.getElementById('cat-nome').value = compra.catNome || '';
   document.getElementById('cat-link').value = compra.catLink || ''; document.getElementById('compra-qty').value = compra.qty || '';
   document.getElementById('compra-total').value = formatMoneyInputValue(compra.total || ((compra.qty || 0) * (compra.preco || 0)));
@@ -2068,7 +2091,7 @@ function calcCompraTotal() { calcCompraUnitPrice(); }
 
 async function saveCompra() {
   const sku = document.getElementById('compra-sku').value.trim();
-  if (!sku) { showToast('warning', 'Campo obrigatório', 'O SKU é obrigatório.'); return; }
+  if (!sku) { showToast('warning', 'Campo obrigatório', 'Selecione um produto (SKU).'); return; }
 
   const qty = parseInt(document.getElementById('compra-qty').value) || 0;
   if (qty <= 0) { showToast('warning', 'Quantidade inválida', 'A quantidade deve ser maior que zero.'); return; }
