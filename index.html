@@ -117,8 +117,8 @@
   .table-row:hover { background: rgba(255,255,255,0.02); }
 
   /* ── TABLE COMPRAS ── */
-  .table-head-compras { display: grid; grid-template-columns: 120px minmax(130px,1fr) 90px 60px 90px 100px 140px 90px 80px 80px 70px; column-gap: 12px; padding: 12px 22px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; min-width: 1400px; align-items: center; }
-  .table-row-compras { display: grid; grid-template-columns: 120px minmax(130px,1fr) 90px 60px 90px 100px 140px 90px 80px 80px 70px; column-gap: 12px; padding: 14px 22px; border-bottom: 1px solid var(--border); align-items: center; transition: background 0.12s; min-width: 1400px; }
+  .table-head-compras { display: grid; grid-template-columns: 120px minmax(130px,1fr) 90px 60px 90px 100px 140px 120px 90px 80px 80px 70px; column-gap: 12px; padding: 12px 22px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; min-width: 1520px; align-items: center; }
+  .table-row-compras { display: grid; grid-template-columns: 120px minmax(130px,1fr) 90px 60px 90px 100px 140px 120px 90px 80px 80px 70px; column-gap: 12px; padding: 14px 22px; border-bottom: 1px solid var(--border); align-items: center; transition: background 0.12s; min-width: 1520px; }
   .table-row-compras:last-child { border-bottom: none; }
   .table-row-compras:hover { background: rgba(255,255,255,0.02); }
   .table-head-compras > div, .table-row-compras > div { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -911,6 +911,7 @@
             <div>Preço Und</div>
             <div>Valor Total</div>
             <div>Pagamento</div>
+            <div>Conta</div>
             <div>P. Venda</div>
             <div>Margem</div>
             <div>ROI</div>
@@ -936,6 +937,23 @@
         <div class="cards-grid" id="cartoes-grid">
           <div class="empty-state" style="padding:30px 20px;grid-column:1/-1">
             <p>Nenhum cartão cadastrado.</p>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="fin-section-title">
+            <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+            Contas de Compra
+          </div>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="openContaModal()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Adicionar Conta
+          </button>
+        </div>
+
+        <div class="cards-grid" id="contas-grid">
+          <div class="empty-state" style="padding:30px 20px;grid-column:1/-1">
+            <p>Nenhuma conta cadastrada.</p>
           </div>
         </div>
 
@@ -1256,6 +1274,22 @@
         <input class="form-input" id="compra-parcelas" placeholder="Ex: 3" type="number" min="1" value="1">
       </div>
     </div>
+    <div class="form-group">
+      <label class="form-label">Conta de Compra</label>
+      <div class="custom-select-wrap" id="cs-compra-conta">
+        <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-compra-conta')">
+          <span class="custom-select-trigger-text" id="cs-compra-conta-label">Nenhuma conta selecionada</span>
+        </div>
+        <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+        <div class="custom-select-dropdown" id="cs-compra-conta-dropdown">
+          <div class="custom-select-option selected" data-value="" onclick="pickCustomSelect('cs-compra-conta','','Nenhuma conta selecionada',this)"><span class="opt-check"></span>Nenhuma conta selecionada</div>
+        </div>
+      </div>
+      <select id="compra-conta" style="display:none">
+        <option value="">Nenhuma conta selecionada</option>
+      </select>
+      <div class="cell-muted" style="margin-top:6px;font-size:12px">Indique em qual conta (Amazon, Mercado Livre etc.) esta compra foi realizada. <a class="link-styled" style="cursor:pointer" onclick="navigate('compras'); switchSubpage('financeiro'); closeModal('compra')">Cadastrar nova conta</a></div>
+    </div>
     <div class="form-group" style="background: var(--surface2); padding: 14px 16px; border-radius: 8px; border: 1px solid var(--border);">
       <label class="form-label">Valor Total da Compra</label>
       <div class="form-prefix">
@@ -1382,6 +1416,21 @@
     </div>
     <div class="form-group"><label class="form-label">Limite Total</label><div class="form-prefix"><span>R$</span><input id="cartao-limite" placeholder="0,00" type="text" inputmode="numeric" oninput="formatMoneyField(this)"></div></div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('cartao')">Cancelar</button><button class="btn btn-primary" id="btn-save-cartao" onclick="saveCartao()">Salvar Cartão</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-conta">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2 id="modal-conta-title">Adicionar Conta</h2>
+        <p>Cadastre uma conta usada para realizar compras (Amazon, Mercado Livre, etc).</p>
+      </div>
+      <div class="close-btn" onclick="closeModal('conta')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></div>
+    </div>
+    <div class="form-group"><label class="form-label">Plataforma / Loja</label><input class="form-input" id="conta-plataforma" placeholder="Ex: Amazon, Mercado Livre..." type="text"></div>
+    <div class="form-group"><label class="form-label">Usuário (nome na conta)</label><input class="form-input" id="conta-usuario" placeholder="Ex: joao.silva" type="text"></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('conta')">Cancelar</button><button class="btn btn-primary" id="btn-save-conta" onclick="saveConta()">Salvar Conta</button></div>
   </div>
 </div>
 
@@ -1518,6 +1567,7 @@ const appData = {
   compras: [],
   financeiro: [],
   cartoes: [],
+  contas: [],
   logs: []
 };
 
@@ -1527,6 +1577,7 @@ function loadMovs() { return cloneRows(appData.movs); }
 function loadCompras() { return cloneRows(appData.compras); }
 function loadFinanceiro() { return cloneRows(appData.financeiro); }
 function loadCartoes() { return cloneRows(appData.cartoes); }
+function loadContas() { return cloneRows(appData.contas); }
 function loadLogs() { return cloneRows(appData.logs); }
 
 function makeId() {
@@ -1595,7 +1646,7 @@ function mapCompraFromDb(r) {
   return {
     id: r.id, sku: cleanText(r.sku), compraNome: cleanText(r.compra_nome), compraLink: cleanText(r.compra_link),
     catNome: cleanText(r.cat_nome), catLink: cleanText(r.cat_link), qty: i(r.qty, 1), preco: n(r.preco),
-    total: n(r.total), cartaoId: r.cartao_id || '', parcelas: i(r.parcelas, 1), venda: n(r.venda),
+    total: n(r.total), cartaoId: r.cartao_id || '', contaId: r.conta_id || '', parcelas: i(r.parcelas, 1), venda: n(r.venda),
     margem: cleanText(r.margem), roi: cleanText(r.roi), date: r.date, createdAt: r.created_at
   };
 }
@@ -1604,7 +1655,7 @@ function mapCompraToDb(c) {
     id: c.id || makeId(), sku: cleanText(c.sku), compra_nome: cleanText(c.compraNome),
     compra_link: cleanText(c.compraLink), cat_nome: cleanText(c.catNome), cat_link: cleanText(c.catLink),
     qty: i(c.qty, 1), preco: n(c.preco), total: n(c.total), cartao_id: nullableUuid(c.cartaoId),
-    parcelas: i(c.parcelas, 1), venda: n(c.venda), margem: cleanText(c.margem), roi: cleanText(c.roi),
+    conta_id: nullableUuid(c.contaId), parcelas: i(c.parcelas, 1), venda: n(c.venda), margem: cleanText(c.margem), roi: cleanText(c.roi),
     date: c.date || new Date().toISOString()
   };
 }
@@ -1613,6 +1664,12 @@ function mapCartaoFromDb(r) {
 }
 function mapCartaoToDb(c) {
   return { id: c.id || makeId(), nome: cleanText(c.nome), digitos: cleanText(c.digitos), limite: n(c.limite), utilizado: n(c.utilizado) };
+}
+function mapContaFromDb(r) {
+  return { id: r.id, plataforma: cleanText(r.plataforma), usuario: cleanText(r.usuario), createdAt: r.created_at, updatedAt: r.updated_at };
+}
+function mapContaToDb(c) {
+  return { id: c.id || makeId(), plataforma: cleanText(c.plataforma), usuario: cleanText(c.usuario) };
 }
 function mapLancFromDb(r) {
   return { id: r.id, descricao: cleanText(r.descricao), tipo: r.tipo, valor: n(r.valor), data: r.data, categoria: cleanText(r.categoria), cartaoId: r.cartao_id || '', createdAt: r.created_at };
@@ -1661,6 +1718,14 @@ async function loadAllData() {
     appData.financeiro = lancamentos.map(mapLancFromDb);
 
     try {
+      const contas = await fetchTable('contas', 'created_at', true);
+      appData.contas = contas.map(mapContaFromDb);
+    } catch (contaErr) {
+      console.warn('Tabela de contas ainda não encontrada. Rode a migration_contas.sql no Supabase.', contaErr);
+      appData.contas = [];
+    }
+
+    try {
       const logs = await fetchTable('system_logs', 'created_at', false);
       appData.logs = logs.map(mapLogFromDb);
     } catch (logErr) {
@@ -1704,6 +1769,7 @@ async function saveMovs(rows) { return persistCollection('movs', 'movimentacoes'
 async function saveCompras(rows) { return persistCollection('compras', 'compras', rows, mapCompraToDb); }
 async function saveFinanceiro2(rows) { return persistCollection('financeiro', 'lancamentos', rows, mapLancToDb); }
 async function saveCartoes(rows) { return persistCollection('cartoes', 'cartoes', rows, mapCartaoToDb); }
+async function saveContas(rows) { return persistCollection('contas', 'contas', rows, mapContaToDb); }
 
 let currentProductId = null;
 let detailMovFilter = 'todos';
@@ -1714,6 +1780,7 @@ let finType = 'receita';
 let currentSubpage = 'compras';
 let editCompraId = null;
 let editCartaoId = null;
+let editContaId = null;
 let pendingConfirmAction = null;
 
 // ─── SIDEBAR & NAV ───────────────────────────────────────────────────────────
@@ -1769,7 +1836,7 @@ function switchSubpage(name) {
     document.getElementById('compras-page-title').textContent = 'Financeiro';
     document.getElementById('compras-page-sub').textContent = 'Acompanhe receitas, despesas e fluxo de caixa.';
     document.getElementById('compras-page-actions').innerHTML = '';
-    renderFinanceiro(); renderCartoes();
+    renderFinanceiro(); renderCartoes(); renderContas();
   }
 }
 function openModal(name) { const modal = document.getElementById('modal-' + name); if (modal) modal.classList.add('open'); }
@@ -2042,6 +2109,21 @@ function syncCompraPaymentSelect(selectedValue = '') {
   rebuildCustomSelect('cs-compra-cartao', getCompraPaymentOptions(), normalizedValue);
 }
 
+function getCompraContaOptions() {
+  const contas = loadContas();
+  return [{ value: '', label: 'Nenhuma conta selecionada' }].concat(
+    contas.map(c => ({
+      value: String(c.id || ''),
+      label: `${c.plataforma || 'Conta'} — ${c.usuario || ''}`
+    }))
+  );
+}
+
+function syncCompraContaSelect(selectedValue = '') {
+  const normalizedValue = selectedValue === null || selectedValue === undefined ? '' : String(selectedValue);
+  rebuildCustomSelect('cs-compra-conta', getCompraContaOptions(), normalizedValue);
+}
+
 /* ── SKU CUSTOM SELECT (modal compra) ── */
 function getSkuSelectOptions() {
   const skus = loadSkus();
@@ -2101,6 +2183,7 @@ function openCompraModal() {
   hideSkuManualInput();
   document.getElementById('compra-parcelas').value = 1; calcCompraUnitPrice();
   syncCompraPaymentSelect('');
+  syncCompraContaSelect('');
   syncCompraSkuSelect('');
   openModal('compra');
 }
@@ -2112,6 +2195,7 @@ function openEditCompraModal(id) {
   document.getElementById('modal-compra-title').textContent = 'Editar Compra';
   document.getElementById('btn-save-compra').textContent = 'Salvar Alterações';
   syncCompraPaymentSelect(compra.cartaoId || '');
+  syncCompraContaSelect(compra.contaId || '');
   syncCompraSkuSelect(compra.sku || '');
   document.getElementById('compra-nome').value = compra.compraNome || '';
   document.getElementById('compra-link').value = compra.compraLink || ''; document.getElementById('cat-nome').value = compra.catNome || '';
@@ -2147,6 +2231,7 @@ async function saveCompra() {
 
   const venda = parseMoneyInputValue(document.getElementById('compra-venda').value) || 0;
   const cartaoId = document.getElementById('compra-cartao').value;
+  const contaId = document.getElementById('compra-conta').value;
   const parcelas = parseInt(document.getElementById('compra-parcelas').value) || 1;
 
   const compras = loadCompras();
@@ -2175,6 +2260,7 @@ async function saveCompra() {
         preco,
         total,
         cartaoId,
+        contaId,
         parcelas,
         venda,
         margem: document.getElementById('compra-margem').value.trim(),
@@ -2197,6 +2283,7 @@ async function saveCompra() {
       preco,
       total,
       cartaoId,
+      contaId,
       parcelas,
       venda,
       margem: document.getElementById('compra-margem').value.trim(),
@@ -2211,7 +2298,7 @@ async function saveCompra() {
     await saveCompras(compras);
     closeModal('compra');
     showToast('success', 'Compra salva', 'O preço unitário foi calculado pelo valor total ÷ quantidade.');
-    renderCompras(); renderCartoes(); renderFinanceiro(); renderDashboard();
+    renderCompras(); renderCartoes(); renderContas(); renderFinanceiro(); renderDashboard();
   } catch (err) { handleAsyncError(err, 'Erro ao salvar compra.'); }
   finally { setButtonLoading('btn-save-compra', false); }
 }
@@ -2236,7 +2323,7 @@ function deleteCompra(id) {
       }
       await saveCompras(compras.filter(c => c.id !== id));
       showToast('success', 'Compra excluída', 'O registro foi removido.');
-      renderCartoes(); renderCompras(); renderFinanceiro();
+      renderCartoes(); renderContas(); renderCompras(); renderFinanceiro();
     }
   });
 }
@@ -2261,6 +2348,7 @@ function toggleSkuGroup(sku) {
 function renderCompras() {
   let compras = loadCompras(); 
   const cartoes = loadCartoes(); 
+  const contas = loadContas();
   const body = document.getElementById('compras-table-body');
   
   // Helper interno para converter strings de porcentagem ("25,5%") ou números em floats válidos
@@ -2276,7 +2364,8 @@ function renderCompras() {
   const q = (document.getElementById('compras-search')?.value || '').toLowerCase().trim();
   if (q) compras = compras.filter(c => {
     const card = cartoes.find(k => k.id === c.cartaoId);
-    const haystack = `${c.sku} ${c.compraNome} ${c.catNome} ${card ? card.nome : ''}`.toLowerCase();
+    const conta = contas.find(k => k.id === c.contaId);
+    const haystack = `${c.sku} ${c.compraNome} ${c.catNome} ${card ? card.nome : ''} ${conta ? conta.plataforma + ' ' + conta.usuario : ''}`.toLowerCase();
     return haystack.includes(q);
   });
   
@@ -2346,6 +2435,7 @@ function renderCompras() {
       <div class="cell-muted">${fmt(avgPreco)}</div>
       <div style="font-weight:800;color:var(--green)">${fmt(totalValor)}</div>
       <div style="color:var(--text-dim)">—</div>
+      <div style="color:var(--text-dim)">—</div>
       <div class="cell-muted">${vendaPai > 0 ? fmt(vendaPai) : '—'}</div>
       <div class="cell-muted" style="font-weight:600">${margemFmt}</div>
       <div class="cell-muted" style="font-weight:600">${roiFmt}</div>
@@ -2373,6 +2463,16 @@ function renderCompras() {
         }
       }
 
+      let contaHTML = `<span style="font-size:11px;color:var(--text-dim)">—</span>`;
+      if (c.contaId) {
+        const conta = contas.find(k => k.id === c.contaId);
+        if (conta) {
+          contaHTML = `<div style="font-size:11px;line-height:1.3"><strong>${escapeHtml(conta.plataforma)}</strong><br><span style="color:var(--text-dim)">${escapeHtml(conta.usuario)}</span></div>`;
+        } else {
+          contaHTML = `<span style="font-size:11px;color:var(--text-dim)">Conta excluída</span>`;
+        }
+      }
+
       return `
       <div class="table-row-compras" style="border-bottom: 1px solid rgba(255,255,255,0.02);">
         <div style="font-weight:500; font-size:11px; color:var(--text-dim); padding-left: 22px;">↳ Detalhe</div>
@@ -2382,6 +2482,7 @@ function renderCompras() {
         <div class="cell-muted">${fmt(c.preco)}</div>
         <div style="font-weight:700;color:var(--green)">${fmt(c.total)}</div>
         <div>${pagamentoHTML}</div>
+        <div>${contaHTML}</div>
         <div class="cell-muted">${fmt(c.venda)}</div>
         <div class="cell-muted">${c.margem || '—'}</div>
         <div class="cell-muted">${c.roi || '—'}</div>
@@ -2575,6 +2676,92 @@ function renderCartoes() {
         <div style="font-size: 11px; color: var(--text-muted)">Próx. Vencimento: <br>${proxFaturaHtml}</div>
         <button class="btn btn-ghost" style="padding: 5px 10px; font-size: 11px;" onclick="openFaturasModal('${c.id}')">Ver Faturas</button>
       </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── CONTAS DE COMPRA (Amazon, Mercado Livre, etc) ────────────────────────────
+function openContaModal() {
+  editContaId = null;
+  document.getElementById('modal-conta-title').textContent = 'Adicionar Conta';
+  document.getElementById('btn-save-conta').textContent = 'Salvar Conta';
+  ['conta-plataforma','conta-usuario'].forEach(id => { document.getElementById(id).value = ''; });
+  openModal('conta');
+}
+function openEditContaModal(id) {
+  const conta = loadContas().find(c => String(c.id) === String(id));
+  if (!conta) return;
+  editContaId = id;
+  document.getElementById('modal-conta-title').textContent = 'Editar Conta';
+  document.getElementById('btn-save-conta').textContent = 'Salvar Alterações';
+  document.getElementById('conta-plataforma').value = conta.plataforma;
+  document.getElementById('conta-usuario').value = conta.usuario;
+  openModal('conta');
+}
+
+async function saveConta() {
+  const plataforma = document.getElementById('conta-plataforma').value.trim();
+  const usuario = document.getElementById('conta-usuario').value.trim();
+  if (!plataforma || !usuario) { showToast('warning', 'Dados inválidos', 'Informe a plataforma e o usuário da conta.'); return; }
+  const contas = loadContas();
+
+  if (editContaId) {
+    const idx = contas.findIndex(c => String(c.id) === String(editContaId));
+    if (idx !== -1) { contas[idx].plataforma = plataforma; contas[idx].usuario = usuario; }
+  } else {
+    contas.push({ id: makeId(), plataforma, usuario, createdAt: new Date().toISOString() });
+  }
+
+  setButtonLoading('btn-save-conta', true);
+  try {
+    await saveContas(contas);
+    closeModal('conta');
+    showToast('success', 'Conta salva', 'A conta de compra foi atualizada.');
+    syncCompraContaSelect(document.getElementById('compra-conta') ? document.getElementById('compra-conta').value : '');
+    renderContas(); renderCompras();
+  } catch (err) { handleAsyncError(err, 'Erro ao salvar conta.'); }
+  finally { setButtonLoading('btn-save-conta', false); }
+}
+
+function deleteConta(id) {
+  openConfirmacao({
+    titulo: 'Excluir conta',
+    subtitulo: 'Confirme para remover esta conta.',
+    mensagem: 'Deseja realmente excluir esta conta de compra? As compras vinculadas ficarão sem conta indicada.',
+    textoNao: 'Não, cancelar',
+    textoSim: 'Sim, excluir',
+    onConfirm: async () => {
+      await saveContas(loadContas().filter(c => String(c.id) !== String(id)));
+      await loadAllData();
+      syncCompraContaSelect(document.getElementById('compra-conta') ? document.getElementById('compra-conta').value : '');
+      showToast('success', 'Conta excluída', 'A conta foi removida.');
+      renderContas(); renderCompras();
+    }
+  });
+}
+
+function renderContas() {
+  const contas = loadContas();
+  const grid = document.getElementById('contas-grid');
+  if (!grid) return;
+
+  if (contas.length === 0) { grid.innerHTML = `<div class="empty-state" style="padding:30px 20px;grid-column:1/-1"><p>Nenhuma conta cadastrada.</p></div>`; return; }
+
+  grid.innerHTML = contas.map(c => {
+    const totalCompras = loadCompras().filter(compra => compra.contaId === c.id).length;
+    return `
+    <div class="credit-card">
+      <div class="credit-card-header">
+        <div>
+          <div class="credit-card-name">${escapeHtml(c.plataforma)}</div>
+          <div class="credit-card-digits" style="font-family:inherit;letter-spacing:normal">${escapeHtml(c.usuario)}</div>
+        </div>
+        <div class="credit-card-actions">
+          <button class="credit-card-edit" onclick="openEditContaModal('${c.id}')" title="Editar conta"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>
+          <button class="credit-card-delete" onclick="deleteConta('${c.id}')" title="Remover conta"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted)">${totalCompras} compra${totalCompras === 1 ? '' : 's'} vinculada${totalCompras === 1 ? '' : 's'}</div>
     </div>`;
   }).join('');
 }
