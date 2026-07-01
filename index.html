@@ -689,13 +689,14 @@
       <a class="nav-item" id="nav-estoque" onclick="navigate('estoque'); closeSidebar()">Estoque</a>
     </div>
 
-    <a class="nav-item" id="nav-compras" onclick="navigate('compras'); closeSidebar()">
+    <a class="nav-item" id="nav-compras" onclick="toggleSubmenu('compras-sub')">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
       Compras
       <svg class="nav-expand" id="compras-expand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
     </a>
     <div class="nav-sub" id="compras-sub" style="display:none">
-      <a class="nav-item" id="nav-financeiro" onclick="navigate('compras'); switchSubpage('financeiro'); closeSidebar()">Financeiro</a>
+      <a class="nav-item" id="nav-compras-registro" onclick="navigate('compras'); switchSubpage('compras'); closeSidebar()">Registro de Compras</a>
+      <a class="nav-item" id="nav-financeiro" onclick="navigate('compras'); switchSubpage('financeiro'); closeSidebar()">Financeiro / Contas</a>
     </div>
   </nav>
 </aside>
@@ -1806,7 +1807,12 @@ function navigate(page) {
   else if (page === 'estoque') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-estoque').classList.add('active'); renderKpis(); renderTable(); }
   else if (page === 'produto-detalhe') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-produto-detalhe').classList.add('active'); renderProductDetail(); }
   else if (page === 'logs') { document.getElementById('nav-logs').classList.add('active'); document.getElementById('page-logs').classList.add('active'); refreshLogs({ silent: true }); }
-  else if (page === 'compras') { document.getElementById('nav-compras').classList.add('active'); document.getElementById('page-compras').classList.add('active'); switchSubpage(currentSubpage); }
+  else if (page === 'compras') {
+    document.getElementById('nav-compras').classList.add('active');
+    document.getElementById('page-compras').classList.add('active');
+    abrirSubmenuCompras();
+    switchSubpage(currentSubpage);
+  }
 }
 // ESC fecha modal aberto
 document.addEventListener('keydown', e => {
@@ -1821,8 +1827,27 @@ function toggleSubmenu(id) {
   const exp = document.getElementById(expId); const open = sub.style.display === 'block';
   sub.style.display = open ? 'none' : 'block'; if (exp) exp.classList.toggle('open', !open);
 }
+function abrirSubmenuCompras() {
+  const sub = document.getElementById('compras-sub');
+  const exp = document.getElementById('compras-expand');
+  if (sub) sub.style.display = 'block';
+  if (exp) exp.classList.add('open');
+}
+function atualizarBreadcrumbCompras(name) {
+  const el = document.getElementById('breadcrumb');
+  if (!el) return;
+  const atual = name === 'financeiro' ? 'Financeiro / Contas' : 'Registro de Compras';
+  el.innerHTML = `<span>Compras</span><span class="sep">›</span><span class="current">${atual}</span>`;
+}
 function switchSubpage(name) {
   currentSubpage = name;
+  abrirSubmenuCompras();
+  atualizarBreadcrumbCompras(name);
+  document.getElementById('nav-compras').classList.add('active');
+  const navRegistro = document.getElementById('nav-compras-registro');
+  const navFinanceiro = document.getElementById('nav-financeiro');
+  if (navRegistro) navRegistro.classList.toggle('active', name === 'compras');
+  if (navFinanceiro) navFinanceiro.classList.toggle('active', name === 'financeiro');
   document.getElementById('subpage-compras').classList.toggle('active', name === 'compras');
   document.getElementById('subpage-financeiro').classList.toggle('active', name === 'financeiro');
   document.getElementById('subtab-compras').classList.toggle('active', name === 'compras');
