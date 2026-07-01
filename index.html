@@ -190,8 +190,8 @@
   .log-action.delete { background: rgba(161,161,170,0.14); color: var(--danger); }
 
   /* ── PÁGINAS ── */
-  #page-dashboard, #page-estoque, #page-produto-detalhe, #page-compras, #page-logs { display: none; }
-  #page-dashboard.active, #page-estoque.active, #page-produto-detalhe.active, #page-compras.active, #page-logs.active { display: block; }
+  #page-dashboard, #page-estoque, #page-produto-detalhe, #page-compras, #page-contas, #page-logs { display: none; }
+  #page-dashboard.active, #page-estoque.active, #page-produto-detalhe.active, #page-compras.active, #page-contas.active, #page-logs.active { display: block; }
   #subpage-compras, #subpage-financeiro { display: none; }
   #subpage-compras.active, #subpage-financeiro.active { display: block; }
 
@@ -696,7 +696,8 @@
     </a>
     <div class="nav-sub" id="compras-sub" style="display:none">
       <a class="nav-item" id="nav-compras-registro" onclick="navigate('compras'); switchSubpage('compras'); closeSidebar()">Registro de Compras</a>
-      <a class="nav-item" id="nav-financeiro" onclick="navigate('compras'); switchSubpage('financeiro'); closeSidebar()">Financeiro / Contas</a>
+      <a class="nav-item" id="nav-financeiro" onclick="navigate('compras'); switchSubpage('financeiro'); closeSidebar()">Financeiro</a>
+      <a class="nav-item" id="nav-contas" onclick="navigate('contas'); closeSidebar()">Contas de Compra</a>
     </div>
   </nav>
 </aside>
@@ -943,23 +944,6 @@
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
           <div class="fin-section-title">
-            <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
-            Contas de Compra
-          </div>
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="openContaModal()">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Adicionar Conta
-          </button>
-        </div>
-
-        <div class="cards-grid" id="contas-grid">
-          <div class="empty-state" style="padding:30px 20px;grid-column:1/-1">
-            <p>Nenhuma conta cadastrada.</p>
-          </div>
-        </div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div class="fin-section-title">
             <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
             Lançamentos (Fluxo de Caixa)
           </div>
@@ -1003,6 +987,34 @@
             <div>Ações</div>
           </div>
           <div id="financeiro-table-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-contas">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>Contas de Compra</h1>
+          <p>Cadastre as contas usadas para comprar (Amazon, Mercado Livre etc.) e veja as compras vinculadas a cada uma.</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="openContaModal()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Adicionar Conta
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar" style="margin-bottom:16px">
+        <div class="search-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="contas-search" placeholder="Buscar por plataforma ou usuário..." oninput="renderContas()">
+        </div>
+      </div>
+
+      <div class="cards-grid" id="contas-grid">
+        <div class="empty-state" style="padding:30px 20px;grid-column:1/-1">
+          <p>Nenhuma conta cadastrada.</p>
         </div>
       </div>
     </div>
@@ -1435,6 +1447,17 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-conta-compras">
+  <div class="modal" style="width: 640px;">
+    <div class="modal-header">
+      <div><h2 id="conta-compras-nome">Compras da Conta</h2><p>Compras registradas nesta conta.</p></div>
+      <div class="close-btn" onclick="closeModal('conta-compras')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></div>
+    </div>
+    <div id="conta-compras-list" style="max-height: 440px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-edit-product">
   <div class="modal">
     <div class="modal-header">
@@ -1813,6 +1836,13 @@ function navigate(page) {
     abrirSubmenuCompras();
     switchSubpage(currentSubpage);
   }
+  else if (page === 'contas') {
+    document.getElementById('page-contas').classList.add('active');
+    abrirSubmenuCompras();
+    atualizarBreadcrumbCompras('contas');
+    highlightComprasSubnav('contas');
+    renderContas();
+  }
 }
 // ESC fecha modal aberto
 document.addEventListener('keydown', e => {
@@ -1836,18 +1866,24 @@ function abrirSubmenuCompras() {
 function atualizarBreadcrumbCompras(name) {
   const el = document.getElementById('breadcrumb');
   if (!el) return;
-  const atual = name === 'financeiro' ? 'Financeiro / Contas' : 'Registro de Compras';
+  const labels = { financeiro: 'Financeiro', contas: 'Contas de Compra', compras: 'Registro de Compras' };
+  const atual = labels[name] || 'Registro de Compras';
   el.innerHTML = `<span>Compras</span><span class="sep">›</span><span class="current">${atual}</span>`;
+}
+function highlightComprasSubnav(name) {
+  document.getElementById('nav-compras').classList.add('active');
+  const navRegistro = document.getElementById('nav-compras-registro');
+  const navFinanceiro = document.getElementById('nav-financeiro');
+  const navContas = document.getElementById('nav-contas');
+  if (navRegistro) navRegistro.classList.toggle('active', name === 'compras');
+  if (navFinanceiro) navFinanceiro.classList.toggle('active', name === 'financeiro');
+  if (navContas) navContas.classList.toggle('active', name === 'contas');
 }
 function switchSubpage(name) {
   currentSubpage = name;
   abrirSubmenuCompras();
   atualizarBreadcrumbCompras(name);
-  document.getElementById('nav-compras').classList.add('active');
-  const navRegistro = document.getElementById('nav-compras-registro');
-  const navFinanceiro = document.getElementById('nav-financeiro');
-  if (navRegistro) navRegistro.classList.toggle('active', name === 'compras');
-  if (navFinanceiro) navFinanceiro.classList.toggle('active', name === 'financeiro');
+  highlightComprasSubnav(name);
   document.getElementById('subpage-compras').classList.toggle('active', name === 'compras');
   document.getElementById('subpage-financeiro').classList.toggle('active', name === 'financeiro');
   document.getElementById('subtab-compras').classList.toggle('active', name === 'compras');
@@ -1861,7 +1897,7 @@ function switchSubpage(name) {
     document.getElementById('compras-page-title').textContent = 'Financeiro';
     document.getElementById('compras-page-sub').textContent = 'Acompanhe receitas, despesas e fluxo de caixa.';
     document.getElementById('compras-page-actions').innerHTML = '';
-    renderFinanceiro(); renderCartoes(); renderContas();
+    renderFinanceiro(); renderCartoes();
   }
 }
 function openModal(name) { const modal = document.getElementById('modal-' + name); if (modal) modal.classList.add('open'); }
@@ -2766,14 +2802,19 @@ function deleteConta(id) {
 }
 
 function renderContas() {
-  const contas = loadContas();
+  let contas = loadContas();
   const grid = document.getElementById('contas-grid');
   if (!grid) return;
 
-  if (contas.length === 0) { grid.innerHTML = `<div class="empty-state" style="padding:30px 20px;grid-column:1/-1"><p>Nenhuma conta cadastrada.</p></div>`; return; }
+  const q = (document.getElementById('contas-search')?.value || '').toLowerCase().trim();
+  if (q) contas = contas.filter(c => `${c.plataforma} ${c.usuario}`.toLowerCase().includes(q));
+
+  if (contas.length === 0) { grid.innerHTML = `<div class="empty-state" style="padding:30px 20px;grid-column:1/-1"><p>${q ? 'Nenhuma conta encontrada para "'+q+'".' : 'Nenhuma conta cadastrada.'}</p></div>`; return; }
 
   grid.innerHTML = contas.map(c => {
-    const totalCompras = loadCompras().filter(compra => compra.contaId === c.id).length;
+    const comprasVinculadas = loadCompras().filter(compra => compra.contaId === c.id);
+    const totalCompras = comprasVinculadas.length;
+    const totalValor = comprasVinculadas.reduce((acc, curr) => acc + (Number(curr.total) || 0), 0);
     return `
     <div class="credit-card">
       <div class="credit-card-header">
@@ -2786,9 +2827,51 @@ function renderContas() {
           <button class="credit-card-delete" onclick="deleteConta('${c.id}')" title="Remover conta"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
         </div>
       </div>
-      <div style="font-size:12px;color:var(--text-muted)">${totalCompras} compra${totalCompras === 1 ? '' : 's'} vinculada${totalCompras === 1 ? '' : 's'}</div>
+
+      <div class="credit-card-values">
+        <div><div class="credit-card-val-label">Compras</div><div class="credit-card-val">${totalCompras}</div></div>
+        <div><div class="credit-card-val-label">Total Gasto</div><div class="credit-card-val" style="color:var(--green)">${fmt(totalValor)}</div></div>
+      </div>
+
+      <div style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; display: flex; justify-content: flex-end; align-items: center;">
+        <button class="btn btn-ghost" style="padding: 5px 10px; font-size: 11px;" onclick="openContaComprasModal('${c.id}')">Ver Compras</button>
+      </div>
     </div>`;
   }).join('');
+}
+
+function openContaComprasModal(contaId) {
+  const conta = loadContas().find(c => c.id === contaId);
+  if (!conta) return;
+  document.getElementById('conta-compras-nome').textContent = `Compras: ${conta.plataforma} — ${conta.usuario}`;
+  const compras = loadCompras().filter(c => c.contaId === contaId).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  const list = document.getElementById('conta-compras-list');
+
+  if (compras.length === 0) {
+    list.innerHTML = `<div class="empty-state" style="padding:24px 10px"><p>Nenhuma compra vinculada a esta conta ainda.</p></div>`;
+  } else {
+    list.innerHTML = compras.map(c => {
+      const dataFmt = c.date ? new Date(c.date).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+      const nomeHTML = c.compraLink
+        ? `<a href="${c.compraLink}" target="_blank" class="link-styled">${escapeHtml(c.compraNome || 'Acessar Link')}</a>`
+        : escapeHtml(c.compraNome || '—');
+      return `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)">
+        <div style="min-width:0">
+          <div style="font-size:13px;font-weight:700">${escapeHtml(c.sku || 'Sem SKU')}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${nomeHTML}</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:2px">${dataFmt} · Qtd: ${c.qty || 0}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:14px;font-weight:800;color:var(--green)">${fmt(c.total)}</div>
+          <button class="icon-btn" style="margin-top:6px;color:var(--blue);border-color:transparent" onclick="closeModal('conta-compras'); openEditCompraModal('${c.id}')" title="Editar compra">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  openModal('conta-compras');
 }
 
 // ─── FINANCEIRO E CAIXA ───────────────────────────────────────────────────────
@@ -3117,6 +3200,7 @@ function rerenderActivePage() {
   else if (pageId === 'page-estoque') { renderKpis(); renderTable(); }
   else if (pageId === 'page-produto-detalhe') renderProductDetail();
   else if (pageId === 'page-compras') switchSubpage(currentSubpage || 'compras');
+  else if (pageId === 'page-contas') renderContas();
   else if (pageId === 'page-logs') renderLogsFromCache();
 }
 
