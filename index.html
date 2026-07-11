@@ -2268,6 +2268,25 @@ function openEditCompraModal(id) {
   calcCompraUnitPrice(); openModal('compra');
 }
 
+function duplicateCompra(id) {
+  const compra = loadCompras().find(c => c.id === id);
+  if (!compra) return;
+  editCompraId = null;
+  document.getElementById('modal-compra-title').textContent = 'Duplicar Compra';
+  document.getElementById('btn-save-compra').textContent = 'Registrar Compra';
+  syncCompraPaymentSelect(compra.cartaoId || '');
+  syncCompraContaSelect(compra.contaId || '');
+  syncCompraSkuSelect(compra.sku || '');
+  document.getElementById('compra-nome').value = compra.compraNome || '';
+  document.getElementById('compra-link').value = compra.compraLink || ''; document.getElementById('cat-nome').value = compra.catNome || '';
+  document.getElementById('cat-link').value = compra.catLink || ''; document.getElementById('compra-qty').value = compra.qty || '';
+  document.getElementById('compra-total').value = formatMoneyInputValue(compra.total || ((compra.qty || 0) * (compra.preco || 0)));
+  document.getElementById('compra-preco').value = formatMoneyInputValue(compra.preco || 0);
+  document.getElementById('compra-parcelas').value = compra.parcelas || 1; document.getElementById('compra-venda').value = formatMoneyInputValue(compra.venda || 0);
+  document.getElementById('compra-margem').value = compra.margem || ''; document.getElementById('compra-roi').value = compra.roi || '';
+  calcCompraUnitPrice(); openModal('compra');
+}
+
 function calcCompraUnitPrice() {
   const qty = parseInt(document.getElementById('compra-qty').value) || 0;
   const total = parseMoneyInputValue(document.getElementById('compra-total').value) || 0;
@@ -2536,7 +2555,12 @@ function renderCompras() {
 
       return `
       <div class="table-row-compras" style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-        <div style="font-weight:500; font-size:11px; color:var(--text-dim); padding-left: 22px;">↳ Detalhe</div>
+        <div style="padding-left: 22px; display: flex; align-items: center;">
+          <button class="btn btn-ghost" style="font-size:10px; padding:2px 6px; color:var(--text-dim);" onclick="duplicateCompra('${c.id}')" title="Duplicar Registro">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:12px;height:12px;margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Duplicar
+          </button>
+        </div>
         <div>${compraHTML}</div>
         <div>${individualCatHTML}</div>
         <div style="font-weight:600">${c.qty}</div>
