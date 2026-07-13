@@ -190,8 +190,8 @@
   .log-action.delete { background: rgba(161,161,170,0.14); color: var(--danger); }
 
   /* ── PÁGINAS ── */
-  #page-dashboard, #page-estoque, #page-produto-detalhe, #page-compras, #page-contas, #page-logs { display: none; }
-  #page-dashboard.active, #page-estoque.active, #page-produto-detalhe.active, #page-compras.active, #page-contas.active, #page-logs.active { display: block; }
+  #page-dashboard, #page-estoque, #page-entradas, #page-produto-detalhe, #page-compras, #page-contas, #page-logs { display: none; }
+  #page-dashboard.active, #page-estoque.active, #page-entradas.active, #page-produto-detalhe.active, #page-compras.active, #page-contas.active, #page-logs.active { display: block; }
   #subpage-compras, #subpage-financeiro { display: none; }
   #subpage-compras.active, #subpage-financeiro.active { display: block; }
 
@@ -263,6 +263,17 @@
   .filter-pill.active { background: var(--surface2); color: var(--text); }
   .filter-pill.in { color: var(--green); }
   .filter-pill.out { color: var(--danger); }
+  .entradas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .entrada-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .entrada-card-top { display: flex; align-items: center; gap: 12px; }
+  .entrada-card-emoji { width: 40px; height: 40px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .entrada-card-name { font-weight: 700; font-size: 14px; line-height: 1.3; }
+  .entrada-card-sku { font-size: 11px; color: var(--text-dim); }
+  .entrada-card-body { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .entrada-card-stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+  .entrada-card-stat-value { font-size: 14px; font-weight: 700; }
+  .entrada-card-date { font-size: 11px; color: var(--text-muted); }
+  .entrada-card-footer { display: flex; justify-content: flex-end; }
   .movement-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; min-height: 112px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-weight: 700; }
   .movement-box.has-items { display: block; padding: 10px; }
   .detail-mov-row { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
@@ -687,6 +698,7 @@
     </a>
     <div class="nav-sub" id="produtos-sub" style="display:none">
       <a class="nav-item" id="nav-estoque" onclick="navigate('estoque'); closeSidebar()">Estoque</a>
+      <a class="nav-item" id="nav-entradas" onclick="navigate('entradas'); closeSidebar()">Últimas Entradas</a>
     </div>
 
     <a class="nav-item" id="nav-compras" onclick="toggleSubmenu('compras-sub')">
@@ -1104,6 +1116,42 @@
       </div>
     </div>
 
+    <div id="page-entradas">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>Últimas Entradas</h1>
+          <p>A movimentação de entrada mais recente registrada em cada produto</p>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="kpi-card">
+          <div class="kpi-label">Produtos com Entrada</div>
+          <div class="kpi-value" id="entradas-kpi-produtos">0</div>
+          <div class="kpi-sub">com ao menos 1 entrada registrada</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Entradas nos últimos 7 dias</div>
+          <div class="kpi-value" id="entradas-kpi-recentes" style="color:var(--green)">0</div>
+          <div class="kpi-sub">movimentações de entrada</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Unidades recebidas (7 dias)</div>
+          <div class="kpi-value" id="entradas-kpi-unidades">0</div>
+          <div class="kpi-sub">unidades entraram no estoque</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="entradas-search" placeholder="Buscar por código ou nome..." oninput="renderEntradas()">
+        </div>
+      </div>
+
+      <div class="entradas-grid" id="entradas-grid"></div>
+    </div>
+
     <div id="page-produto-detalhe">
       <button class="back-link" onclick="navigate('estoque')">‹ Voltar</button>
 
@@ -1130,10 +1178,15 @@
         </div>
       </div>
 
-      <div class="detail-cards" style="grid-template-columns: repeat(1, 1fr); max-width: 260px;">
+      <div class="detail-cards" style="grid-template-columns: repeat(2, 1fr); max-width: 540px;">
         <div class="detail-card">
           <div class="detail-card-label"><span>Custo p/ Unid ⓘ</span><span>$</span></div>
           <div class="detail-card-value" id="detail-average-cost">R$ 0,00</div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-card-label"><span>Custo Médio (Entradas) ⓘ</span><span>$</span></div>
+          <div class="detail-card-value" id="detail-avg-purchase-cost">R$ 0,00</div>
+          <div class="entrada-card-sku" id="detail-avg-purchase-sub" style="margin-top:6px">Sem entradas registradas</div>
         </div>
       </div>
 
@@ -1813,6 +1866,7 @@ function closeSidebar() { document.getElementById('sidebar').classList.remove('o
 const BREADCRUMBS = {
   dashboard: ['Dashboard', 'Início'],
   estoque: ['Produtos', 'Estoque'],
+  entradas: ['Produtos', 'Últimas Entradas'],
   'produto-detalhe': ['Produtos', 'Detalhe do Produto'],
   logs: ['Sistema', 'Logs de Auditoria'],
   compras: ['Operação', 'Compras'],
@@ -1828,6 +1882,7 @@ function navigate(page) {
   setBreadcrumb(page);
   if (page === 'dashboard') { document.getElementById('nav-dashboard').classList.add('active'); document.getElementById('page-dashboard').classList.add('active'); renderDashboard(); }
   else if (page === 'estoque') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-estoque').classList.add('active'); renderKpis(); renderTable(); }
+  else if (page === 'entradas') { document.getElementById('nav-entradas').classList.add('active'); document.getElementById('page-entradas').classList.add('active'); renderEntradas(); }
   else if (page === 'produto-detalhe') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-produto-detalhe').classList.add('active'); renderProductDetail(); }
   else if (page === 'logs') { document.getElementById('nav-logs').classList.add('active'); document.getElementById('page-logs').classList.add('active'); refreshLogs({ silent: true }); }
   else if (page === 'compras') {
@@ -1962,7 +2017,81 @@ function renderTable() { const skus = loadSkus(); const q = document.getElementB
 function openProductDetail(skuId) { currentProductId = skuId; detailMovFilter = 'todos'; navigate('produto-detalhe'); }
 function idsMatch(a, b) { return String(a) === String(b); }
 function getCurrentSku() { const skus = loadSkus(); let sku = skus.find(s => idsMatch(s.id, currentProductId)); if (sku) return sku; const detailSkuEl = document.getElementById('detail-sku'); const codeOnScreen = detailSkuEl ? detailSkuEl.textContent.trim() : ''; sku = skus.find(s => (s.code || '').trim() === codeOnScreen); if (sku) { currentProductId = sku.id; return sku; } return null; }
-function renderProductDetail() { const sku = getCurrentSku(); if (!sku) { navigate('estoque'); return; } const movs = loadMovs().filter(m => idsMatch(m.skuId, sku.id)); const entradas = movs.filter(m => m.type === 'entrada'); const saidas = movs.filter(m => m.type === 'saida'); const stockValue = sku.qty * sku.cost; document.getElementById('detail-emoji').textContent = sku.emoji || '📦'; document.getElementById('detail-name').textContent = sku.name; document.getElementById('detail-sku').textContent = sku.code; document.getElementById('detail-created').textContent = fmtOnlyDate(sku.createdAt); document.getElementById('detail-kind').textContent = (sku.kind === 'kit') ? 'KIT' : 'Unitário'; document.getElementById('detail-qty-pill').textContent = `${sku.qty} unidades`; document.getElementById('detail-stock-value-pill').textContent = `${fmt(stockValue)} em estoque`; document.getElementById('detail-average-cost').textContent = fmt(sku.cost || 0); document.getElementById('filter-todos').textContent = `Todos (${movs.length})`; document.getElementById('filter-entrada').textContent = `Entradas (${entradas.length})`; document.getElementById('filter-saida').textContent = `Saídas (${saidas.length})`; document.getElementById('filter-todos').classList.toggle('active', detailMovFilter === 'todos'); document.getElementById('filter-entrada').classList.toggle('active', detailMovFilter === 'entrada'); document.getElementById('filter-saida').classList.toggle('active', detailMovFilter === 'saida'); renderDetailMovements(movs); renderDetailCosts(entradas); }
+function computeAverageCost(entradas) {
+  let totalQty = 0, totalCusto = 0;
+  entradas.forEach(m => {
+    const q = Number(m.qty) || 0;
+    const c = Number(m.cost) || 0;
+    totalQty += q;
+    totalCusto += q * c;
+  });
+  return totalQty > 0 ? (totalCusto / totalQty) : 0;
+}
+function renderEntradas() {
+  const skus = loadSkus();
+  const movs = loadMovs();
+  const q = (document.getElementById('entradas-search').value || '').toLowerCase();
+
+  const rows = skus.map(s => {
+    const entradas = movs.filter(m => idsMatch(m.skuId, s.id) && m.type === 'entrada');
+    if (!entradas.length) return null;
+    const last = entradas.reduce((a, b) => new Date(b.date) > new Date(a.date) ? b : a);
+    return { sku: s, last, avgCost: computeAverageCost(entradas), totalEntradas: entradas.length };
+  }).filter(Boolean).filter(r => !q || r.sku.name.toLowerCase().includes(q) || r.sku.code.toLowerCase().includes(q));
+
+  rows.sort((a, b) => new Date(b.last.date) - new Date(a.last.date));
+
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const allEntradas = movs.filter(m => m.type === 'entrada');
+  const recentes = allEntradas.filter(m => new Date(m.date) >= sevenDaysAgo);
+  document.getElementById('entradas-kpi-produtos').textContent = rows.length;
+  document.getElementById('entradas-kpi-recentes').textContent = recentes.length;
+  document.getElementById('entradas-kpi-unidades').textContent = recentes.reduce((a, m) => a + (Number(m.qty) || 0), 0);
+
+  const grid = document.getElementById('entradas-grid');
+  if (!rows.length) {
+    grid.innerHTML = `<div class="empty-state"><p>Nenhuma movimentação de entrada encontrada.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = rows.map(r => {
+    const s = r.sku, m = r.last;
+    return `
+      <div class="entrada-card">
+        <div class="entrada-card-top">
+          <div class="entrada-card-emoji">${s.emoji || '📦'}</div>
+          <div>
+            <div class="entrada-card-name">${escapeHtml(s.name)}</div>
+            <div class="entrada-card-sku">${escapeHtml(s.code)}</div>
+          </div>
+        </div>
+        <div class="entrada-card-date">Última entrada: ${fmtDate(m.date)}</div>
+        <div class="entrada-card-body">
+          <div>
+            <div class="entrada-card-stat-label">Qtd. recebida</div>
+            <div class="entrada-card-stat-value" style="color:var(--green)">+${m.qty} un</div>
+          </div>
+          <div>
+            <div class="entrada-card-stat-label">Custo p/ Unid</div>
+            <div class="entrada-card-stat-value">${fmt(m.cost || 0)}</div>
+          </div>
+          <div>
+            <div class="entrada-card-stat-label">Estoque após</div>
+            <div class="entrada-card-stat-value">${m.qtyAfter !== undefined ? m.qtyAfter + ' un' : '—'}</div>
+          </div>
+          <div>
+            <div class="entrada-card-stat-label">Custo médio</div>
+            <div class="entrada-card-stat-value">${fmt(r.avgCost)}</div>
+          </div>
+        </div>
+        <div class="entrada-card-footer">
+          <button class="mini-view-btn" onclick="openProductDetail('${s.id}')">Ver produto</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+function renderProductDetail() { const sku = getCurrentSku(); if (!sku) { navigate('estoque'); return; } const movs = loadMovs().filter(m => idsMatch(m.skuId, sku.id)); const entradas = movs.filter(m => m.type === 'entrada'); const saidas = movs.filter(m => m.type === 'saida'); const stockValue = sku.qty * sku.cost; document.getElementById('detail-emoji').textContent = sku.emoji || '📦'; document.getElementById('detail-name').textContent = sku.name; document.getElementById('detail-sku').textContent = sku.code; document.getElementById('detail-created').textContent = fmtOnlyDate(sku.createdAt); document.getElementById('detail-kind').textContent = (sku.kind === 'kit') ? 'KIT' : 'Unitário'; document.getElementById('detail-qty-pill').textContent = `${sku.qty} unidades`; document.getElementById('detail-stock-value-pill').textContent = `${fmt(stockValue)} em estoque`; document.getElementById('detail-average-cost').textContent = fmt(sku.cost || 0); const avgPurchaseCost = computeAverageCost(entradas); document.getElementById('detail-avg-purchase-cost').textContent = fmt(avgPurchaseCost); const avgSub = document.getElementById('detail-avg-purchase-sub'); if (!entradas.length) { avgSub.textContent = 'Sem entradas registradas'; } else { const diff = (sku.cost || 0) - avgPurchaseCost; const diffTxt = diff > 0.005 ? ` · ${fmt(Math.abs(diff))} acima do custo atual` : diff < -0.005 ? ` · ${fmt(Math.abs(diff))} abaixo do custo atual` : ' · igual ao custo atual'; avgSub.textContent = `Baseado em ${entradas.length} entrada${entradas.length === 1 ? '' : 's'}${diffTxt}`; } document.getElementById('filter-todos').textContent = `Todos (${movs.length})`; document.getElementById('filter-entrada').textContent = `Entradas (${entradas.length})`; document.getElementById('filter-saida').textContent = `Saídas (${saidas.length})`; document.getElementById('filter-todos').classList.toggle('active', detailMovFilter === 'todos'); document.getElementById('filter-entrada').classList.toggle('active', detailMovFilter === 'entrada'); document.getElementById('filter-saida').classList.toggle('active', detailMovFilter === 'saida'); renderDetailMovements(movs); renderDetailCosts(entradas); }
 function renderDetailMovements(movs) { const box = document.getElementById('detail-movements-box'); const filtered = movs.filter(m => detailMovFilter === 'todos' ? true : m.type === detailMovFilter); if (filtered.length === 0) { box.classList.remove('has-items'); box.textContent = 'Nenhuma movimentação registrada'; return; } box.classList.add('has-items'); box.innerHTML = filtered.map(m => { const isEntrada = m.type === 'entrada'; const metaParts = [fmtDate(m.date)]; if (isEntrada) metaParts.push('Entrada de estoque'); else metaParts.push('Saída de estoque'); if (m.note && m.note !== 'Entrada de estoque' && m.note !== 'Saída de estoque') metaParts.push(m.note); if (m.notes) metaParts.push(m.notes); if (m.qtyAfter !== undefined) metaParts.push(`Estoque após: ${m.qtyAfter} un`); if (isEntrada && m.cost) metaParts.push(`Custo p/ Unid: ${fmt(m.cost)}`); return ` <div class="detail-mov-row"> <div class="mov-badge ${isEntrada ? 'in' : 'out'}">${isEntrada ? '📦' : '🚚'}</div> <div class="detail-mov-info"> <strong>${isEntrada ? 'Entrada' : 'Saída'} de ${m.qty} unidade${m.qty === 1 ? '' : 's'}</strong> <span>${metaParts.join(' · ')}</span> </div> <div style="text-align:right"> <div class="mov-qty ${isEntrada ? 'in' : 'out'}">${isEntrada ? '+' : '-'}${m.qty}</div> </div> </div>`; }).join(''); }
 function renderDetailCosts(entradas) { const box = document.getElementById('detail-costs-box'); if (!entradas.length) { box.classList.remove('has-items'); box.textContent = 'Nenhum histórico de custo registrado'; return; } box.classList.add('has-items'); box.innerHTML = entradas.map(m => { const prevCost = m.previousCost !== undefined ? m.previousCost : null; const costChanged = prevCost !== null && prevCost !== m.cost; return ` <div class="detail-mov-row"> <div class="mov-badge in">$</div> <div class="detail-mov-info"> <strong>${fmt(m.cost || 0)} / unidade${costChanged ? ' ↑' : ''}</strong> <span>${fmtDate(m.date)} · ${m.qty} unidade${m.qty === 1 ? '' : 's'} entrada</span> </div> <div style="text-align:right;font-size:12px;color:var(--text-muted)">${costChanged ? fmt(prevCost) + ' → ' + fmt(m.cost) : fmt(m.cost)}</div> </div>`; }).join(''); }
 function selectEditProductKind(kind) { editProductKind = kind; const isUnit = kind === 'unitario'; document.getElementById('edit-prod-unitario').checked = isUnit; document.getElementById('edit-prod-kit').checked = !isUnit; document.getElementById('edit-card-unitario').classList.toggle('selected', isUnit); document.getElementById('edit-card-kit').classList.toggle('selected', !isUnit); }
@@ -3222,6 +3351,7 @@ function rerenderActivePage() {
 
   if (pageId === 'page-dashboard') renderDashboard();
   else if (pageId === 'page-estoque') { renderKpis(); renderTable(); }
+  else if (pageId === 'page-entradas') renderEntradas();
   else if (pageId === 'page-produto-detalhe') renderProductDetail();
   else if (pageId === 'page-compras') switchSubpage(currentSubpage || 'compras');
   else if (pageId === 'page-contas') renderContas();
