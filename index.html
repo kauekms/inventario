@@ -1147,6 +1147,14 @@
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M21 21l-4.35-4.35"/></svg>
           <input type="text" id="entradas-search" placeholder="Buscar por código ou nome..." oninput="renderEntradas()">
         </div>
+        <div class="custom-select-wrap sm" id="cs-filter-mes">
+          <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-filter-mes')">
+            <span class="custom-select-trigger-text" id="cs-filter-mes-label">Todos os meses</span>
+          </div>
+          <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+          <div class="custom-select-dropdown" id="cs-filter-mes-dropdown"></div>
+        </div>
+        <select id="filter-mes" style="display:none" onchange="renderEntradas()"><option value="todos">Todos os meses</option></select>
       </div>
 
       <div class="entradas-grid" id="entradas-grid"></div>
@@ -2027,24 +2035,35 @@ function computeAverageCost(entradas) {
   });
   return totalQty > 0 ? (totalCusto / totalQty) : 0;
 }
+function monthKey(iso) { const d = new Date(iso); if (Number.isNaN(d.getTime())) return null; return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
+function monthLabel(key) { const [y, m] = key.split('-').map(Number); const d = new Date(y, m - 1, 1); const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }); return label.charAt(0).toUpperCase() + label.slice(1); }
 function renderEntradas() {
   const skus = loadSkus();
   const movs = loadMovs();
   const q = (document.getElementById('entradas-search').value || '').toLowerCase();
+
+  const allEntradasAll = movs.filter(m => m.type === 'entrada');
+  const monthKeys = [...new Set(allEntradasAll.map(m => monthKey(m.date)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+  const monthOptions = [{ value: 'todos', label: 'Todos os meses' }, ...monthKeys.map(k => ({ value: k, label: monthLabel(k) }))];
+  const currentMesSelect = document.getElementById('filter-mes');
+  const selectedMes = currentMesSelect ? currentMesSelect.value : 'todos';
+  rebuildCustomSelect('cs-filter-mes', monthOptions, selectedMes);
+  const mesFilter = document.getElementById('filter-mes').value || 'todos';
 
   const rows = skus.map(s => {
     const entradas = movs.filter(m => idsMatch(m.skuId, s.id) && m.type === 'entrada');
     if (!entradas.length) return null;
     const last = entradas.reduce((a, b) => new Date(b.date) > new Date(a.date) ? b : a);
     return { sku: s, last, avgCost: computeAverageCost(entradas), totalEntradas: entradas.length };
-  }).filter(Boolean).filter(r => !q || r.sku.name.toLowerCase().includes(q) || r.sku.code.toLowerCase().includes(q));
+  }).filter(Boolean)
+    .filter(r => !q || r.sku.name.toLowerCase().includes(q) || r.sku.code.toLowerCase().includes(q))
+    .filter(r => mesFilter === 'todos' || monthKey(r.last.date) === mesFilter);
 
   rows.sort((a, b) => new Date(b.last.date) - new Date(a.last.date));
 
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const allEntradas = movs.filter(m => m.type === 'entrada');
-  const recentes = allEntradas.filter(m => new Date(m.date) >= sevenDaysAgo);
+  const recentes = allEntradasAll.filter(m => new Date(m.date) >= sevenDaysAgo);
   document.getElementById('entradas-kpi-produtos').textContent = rows.length;
   document.getElementById('entradas-kpi-recentes').textContent = recentes.length;
   document.getElementById('entradas-kpi-unidades').textContent = recentes.reduce((a, m) => a + (Number(m.qty) || 0), 0);
