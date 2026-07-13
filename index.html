@@ -698,6 +698,7 @@
     </a>
     <div class="nav-sub" id="produtos-sub" style="display:none">
       <a class="nav-item" id="nav-estoque" onclick="navigate('estoque'); closeSidebar()">Estoque</a>
+      <a class="nav-item" id="nav-anunciados" onclick="navigate('anunciados'); closeSidebar()">Itens Anunciados</a>
       <a class="nav-item" id="nav-entradas" onclick="navigate('entradas'); closeSidebar()">Últimas Entradas</a>
     </div>
 
@@ -1038,10 +1039,6 @@
           <p>Gerencie seus SKUs e controle de estoque</p>
         </div>
         <div class="page-actions">
-          <button class="btn btn-ghost" onclick="navigate('anunciados')">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.5-8.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 8.5-8.5z"/></svg>
-            Itens Anunciados
-          </button>
           <button class="btn btn-primary" onclick="openCadastroProdutoModal()">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Cadastrar Produto
@@ -1908,7 +1905,7 @@ function navigate(page) {
   setBreadcrumb(page);
   if (page === 'dashboard') { document.getElementById('nav-dashboard').classList.add('active'); document.getElementById('page-dashboard').classList.add('active'); renderDashboard(); }
   else if (page === 'estoque') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-estoque').classList.add('active'); renderKpis(); renderTable(); }
-  else if (page === 'anunciados') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-anunciados').classList.add('active'); renderAnunciados(); }
+  else if (page === 'anunciados') { document.getElementById('nav-anunciados').classList.add('active'); document.getElementById('page-anunciados').classList.add('active'); renderAnunciados(); }
   else if (page === 'entradas') { document.getElementById('nav-entradas').classList.add('active'); document.getElementById('page-entradas').classList.add('active'); renderEntradas(); }
   else if (page === 'produto-detalhe') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-produto-detalhe').classList.add('active'); renderProductDetail(); }
   else if (page === 'logs') { document.getElementById('nav-logs').classList.add('active'); document.getElementById('page-logs').classList.add('active'); refreshLogs({ silent: true }); }
