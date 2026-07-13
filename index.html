@@ -190,8 +190,8 @@
   .log-action.delete { background: rgba(161,161,170,0.14); color: var(--danger); }
 
   /* ── PÁGINAS ── */
-  #page-dashboard, #page-estoque, #page-entradas, #page-produto-detalhe, #page-compras, #page-contas, #page-logs { display: none; }
-  #page-dashboard.active, #page-estoque.active, #page-entradas.active, #page-produto-detalhe.active, #page-compras.active, #page-contas.active, #page-logs.active { display: block; }
+  #page-dashboard, #page-estoque, #page-entradas, #page-produto-detalhe, #page-compras, #page-contas, #page-logs, #page-anunciados { display: none; }
+  #page-dashboard.active, #page-estoque.active, #page-entradas.active, #page-produto-detalhe.active, #page-compras.active, #page-contas.active, #page-logs.active, #page-anunciados.active { display: block; }
   #subpage-compras, #subpage-financeiro { display: none; }
   #subpage-compras.active, #subpage-financeiro.active { display: block; }
 
@@ -1038,6 +1038,10 @@
           <p>Gerencie seus SKUs e controle de estoque</p>
         </div>
         <div class="page-actions">
+          <button class="btn btn-ghost" onclick="navigate('anunciados')">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.5-8.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 8.5-8.5z"/></svg>
+            Itens Anunciados
+          </button>
           <button class="btn btn-primary" onclick="openCadastroProdutoModal()">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Cadastrar Produto
@@ -1116,6 +1120,17 @@
       </div>
     </div>
 
+    <div id="page-anunciados">
+      <button class="back-link" onclick="navigate('estoque')">‹ Voltar</button>
+      <div class="page-header">
+        <div class="page-title">
+          <h1>Itens Anunciados</h1>
+          <p>Produtos marcados como anunciados, com o custo médio cadastrado</p>
+        </div>
+      </div>
+      <div class="entradas-grid" id="anunciados-grid"></div>
+    </div>
+
     <div id="page-entradas">
       <div class="page-header">
         <div class="page-title">
@@ -1177,10 +1192,12 @@
             <div class="detail-badges">
               <span class="detail-pill" id="detail-qty-pill">0 unidades</span>
               <span class="detail-pill" id="detail-stock-value-pill">R$ 0,00 em estoque</span>
+              <span class="detail-pill" id="detail-anunciado-pill" style="display:none">📢 Anunciado</span>
             </div>
           </div>
         </div>
         <div class="detail-actions">
+          <button type="button" class="btn btn-ghost" id="btn-toggle-anunciado" onclick="toggleAnunciado()">Marcar como Anunciado</button>
           <button type="button" class="btn btn-ghost" onclick="openEditProductModal()">Editar cadastro</button>
           <button type="button" class="btn btn-danger" onclick="openDeleteProductModal()">Excluir</button>
         </div>
@@ -1700,7 +1717,7 @@ function mapSkuFromDb(r) {
     id: r.id, name: cleanText(r.name), code: cleanText(r.code), kind: cleanText(r.kind, 'unitario'),
     emoji: cleanText(r.emoji, '📦'), cost: n(r.cost), packageCost: n(r.package_cost),
     tax: cleanText(r.tax, 'Padrão da conta'), qty: i(r.qty), min: i(r.min, 5), ads: n(r.ads),
-    sync: Boolean(r.sync), createdAt: r.created_at, updatedAt: r.updated_at
+    sync: Boolean(r.sync), anunciado: Boolean(r.anunciado), createdAt: r.created_at, updatedAt: r.updated_at
   };
 }
 function mapSkuToDb(s) {
@@ -1708,7 +1725,7 @@ function mapSkuToDb(s) {
     id: s.id || makeId(), name: cleanText(s.name), code: cleanText(s.code),
     kind: s.kind === 'kit' ? 'kit' : 'unitario', emoji: cleanText(s.emoji, s.kind === 'kit' ? '🧩' : '📦'),
     cost: n(s.cost), package_cost: n(s.packageCost), tax: cleanText(s.tax, 'Padrão da conta'),
-    qty: i(s.qty), min: i(s.min, 5), ads: n(s.ads), sync: Boolean(s.sync)
+    qty: i(s.qty), min: i(s.min, 5), ads: n(s.ads), sync: Boolean(s.sync), anunciado: Boolean(s.anunciado)
   };
 }
 function mapMovFromDb(r) {
@@ -1874,6 +1891,7 @@ function closeSidebar() { document.getElementById('sidebar').classList.remove('o
 const BREADCRUMBS = {
   dashboard: ['Dashboard', 'Início'],
   estoque: ['Produtos', 'Estoque'],
+  anunciados: ['Produtos', 'Itens Anunciados'],
   entradas: ['Produtos', 'Últimas Entradas'],
   'produto-detalhe': ['Produtos', 'Detalhe do Produto'],
   logs: ['Sistema', 'Logs de Auditoria'],
@@ -1890,6 +1908,7 @@ function navigate(page) {
   setBreadcrumb(page);
   if (page === 'dashboard') { document.getElementById('nav-dashboard').classList.add('active'); document.getElementById('page-dashboard').classList.add('active'); renderDashboard(); }
   else if (page === 'estoque') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-estoque').classList.add('active'); renderKpis(); renderTable(); }
+  else if (page === 'anunciados') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-anunciados').classList.add('active'); renderAnunciados(); }
   else if (page === 'entradas') { document.getElementById('nav-entradas').classList.add('active'); document.getElementById('page-entradas').classList.add('active'); renderEntradas(); }
   else if (page === 'produto-detalhe') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-produto-detalhe').classList.add('active'); renderProductDetail(); }
   else if (page === 'logs') { document.getElementById('nav-logs').classList.add('active'); document.getElementById('page-logs').classList.add('active'); refreshLogs({ silent: true }); }
@@ -2110,7 +2129,7 @@ function renderEntradas() {
       </div>`;
   }).join('');
 }
-function renderProductDetail() { const sku = getCurrentSku(); if (!sku) { navigate('estoque'); return; } const movs = loadMovs().filter(m => idsMatch(m.skuId, sku.id)); const entradas = movs.filter(m => m.type === 'entrada'); const saidas = movs.filter(m => m.type === 'saida'); const stockValue = sku.qty * sku.cost; document.getElementById('detail-emoji').textContent = sku.emoji || '📦'; document.getElementById('detail-name').textContent = sku.name; document.getElementById('detail-sku').textContent = sku.code; document.getElementById('detail-created').textContent = fmtOnlyDate(sku.createdAt); document.getElementById('detail-kind').textContent = (sku.kind === 'kit') ? 'KIT' : 'Unitário'; document.getElementById('detail-qty-pill').textContent = `${sku.qty} unidades`; document.getElementById('detail-stock-value-pill').textContent = `${fmt(stockValue)} em estoque`; document.getElementById('detail-average-cost').textContent = fmt(sku.cost || 0); const avgPurchaseCost = computeAverageCost(entradas); document.getElementById('detail-avg-purchase-cost').textContent = fmt(avgPurchaseCost); const avgSub = document.getElementById('detail-avg-purchase-sub'); if (!entradas.length) { avgSub.textContent = 'Sem entradas registradas'; } else { const diff = (sku.cost || 0) - avgPurchaseCost; const diffTxt = diff > 0.005 ? ` · ${fmt(Math.abs(diff))} acima do custo atual` : diff < -0.005 ? ` · ${fmt(Math.abs(diff))} abaixo do custo atual` : ' · igual ao custo atual'; avgSub.textContent = `Baseado em ${entradas.length} entrada${entradas.length === 1 ? '' : 's'}${diffTxt}`; } document.getElementById('filter-todos').textContent = `Todos (${movs.length})`; document.getElementById('filter-entrada').textContent = `Entradas (${entradas.length})`; document.getElementById('filter-saida').textContent = `Saídas (${saidas.length})`; document.getElementById('filter-todos').classList.toggle('active', detailMovFilter === 'todos'); document.getElementById('filter-entrada').classList.toggle('active', detailMovFilter === 'entrada'); document.getElementById('filter-saida').classList.toggle('active', detailMovFilter === 'saida'); renderDetailMovements(movs); renderDetailCosts(entradas); }
+function renderProductDetail() { const sku = getCurrentSku(); if (!sku) { navigate('estoque'); return; } const movs = loadMovs().filter(m => idsMatch(m.skuId, sku.id)); const entradas = movs.filter(m => m.type === 'entrada'); const saidas = movs.filter(m => m.type === 'saida'); const stockValue = sku.qty * sku.cost; document.getElementById('detail-emoji').textContent = sku.emoji || '📦'; document.getElementById('detail-name').textContent = sku.name; document.getElementById('detail-sku').textContent = sku.code; document.getElementById('detail-created').textContent = fmtOnlyDate(sku.createdAt); document.getElementById('detail-kind').textContent = (sku.kind === 'kit') ? 'KIT' : 'Unitário'; document.getElementById('detail-qty-pill').textContent = `${sku.qty} unidades`; document.getElementById('detail-stock-value-pill').textContent = `${fmt(stockValue)} em estoque`; const anunciadoPill = document.getElementById('detail-anunciado-pill'); anunciadoPill.style.display = sku.anunciado ? '' : 'none'; const toggleBtn = document.getElementById('btn-toggle-anunciado'); if (toggleBtn) toggleBtn.textContent = sku.anunciado ? 'Remover Anúncio' : 'Marcar como Anunciado'; document.getElementById('detail-average-cost').textContent = fmt(sku.cost || 0); const avgPurchaseCost = computeAverageCost(entradas); document.getElementById('detail-avg-purchase-cost').textContent = fmt(avgPurchaseCost); const avgSub = document.getElementById('detail-avg-purchase-sub'); if (!entradas.length) { avgSub.textContent = 'Sem entradas registradas'; } else { const diff = (sku.cost || 0) - avgPurchaseCost; const diffTxt = diff > 0.005 ? ` · ${fmt(Math.abs(diff))} acima do custo atual` : diff < -0.005 ? ` · ${fmt(Math.abs(diff))} abaixo do custo atual` : ' · igual ao custo atual'; avgSub.textContent = `Baseado em ${entradas.length} entrada${entradas.length === 1 ? '' : 's'}${diffTxt}`; } document.getElementById('filter-todos').textContent = `Todos (${movs.length})`; document.getElementById('filter-entrada').textContent = `Entradas (${entradas.length})`; document.getElementById('filter-saida').textContent = `Saídas (${saidas.length})`; document.getElementById('filter-todos').classList.toggle('active', detailMovFilter === 'todos'); document.getElementById('filter-entrada').classList.toggle('active', detailMovFilter === 'entrada'); document.getElementById('filter-saida').classList.toggle('active', detailMovFilter === 'saida'); renderDetailMovements(movs); renderDetailCosts(entradas); }
 function renderDetailMovements(movs) { const box = document.getElementById('detail-movements-box'); const filtered = movs.filter(m => detailMovFilter === 'todos' ? true : m.type === detailMovFilter); if (filtered.length === 0) { box.classList.remove('has-items'); box.textContent = 'Nenhuma movimentação registrada'; return; } box.classList.add('has-items'); box.innerHTML = filtered.map(m => { const isEntrada = m.type === 'entrada'; const metaParts = [fmtDate(m.date)]; if (isEntrada) metaParts.push('Entrada de estoque'); else metaParts.push('Saída de estoque'); if (m.note && m.note !== 'Entrada de estoque' && m.note !== 'Saída de estoque') metaParts.push(m.note); if (m.notes) metaParts.push(m.notes); if (m.qtyAfter !== undefined) metaParts.push(`Estoque após: ${m.qtyAfter} un`); if (isEntrada && m.cost) metaParts.push(`Custo p/ Unid: ${fmt(m.cost)}`); return ` <div class="detail-mov-row"> <div class="mov-badge ${isEntrada ? 'in' : 'out'}">${isEntrada ? '📦' : '🚚'}</div> <div class="detail-mov-info"> <strong>${isEntrada ? 'Entrada' : 'Saída'} de ${m.qty} unidade${m.qty === 1 ? '' : 's'}</strong> <span>${metaParts.join(' · ')}</span> </div> <div style="text-align:right"> <div class="mov-qty ${isEntrada ? 'in' : 'out'}">${isEntrada ? '+' : '-'}${m.qty}</div> </div> </div>`; }).join(''); }
 function renderDetailCosts(entradas) { const box = document.getElementById('detail-costs-box'); if (!entradas.length) { box.classList.remove('has-items'); box.textContent = 'Nenhum histórico de custo registrado'; return; } box.classList.add('has-items'); box.innerHTML = entradas.map(m => { const prevCost = m.previousCost !== undefined ? m.previousCost : null; const costChanged = prevCost !== null && prevCost !== m.cost; return ` <div class="detail-mov-row"> <div class="mov-badge in">$</div> <div class="detail-mov-info"> <strong>${fmt(m.cost || 0)} / unidade${costChanged ? ' ↑' : ''}</strong> <span>${fmtDate(m.date)} · ${m.qty} unidade${m.qty === 1 ? '' : 's'} entrada</span> </div> <div style="text-align:right;font-size:12px;color:var(--text-muted)">${costChanged ? fmt(prevCost) + ' → ' + fmt(m.cost) : fmt(m.cost)}</div> </div>`; }).join(''); }
 function selectEditProductKind(kind) { editProductKind = kind; const isUnit = kind === 'unitario'; document.getElementById('edit-prod-unitario').checked = isUnit; document.getElementById('edit-prod-kit').checked = !isUnit; document.getElementById('edit-card-unitario').classList.toggle('selected', isUnit); document.getElementById('edit-card-kit').classList.toggle('selected', !isUnit); }
@@ -2141,6 +2160,54 @@ async function saveEditedProduct() {
     renderProductDetail(); renderKpis(); renderTable(); renderDashboard();
   } catch (err) { handleAsyncError(err, 'Erro ao salvar produto.'); }
 }
+async function toggleAnunciado() {
+  const sku = getCurrentSku();
+  if (!sku) return;
+  const skus = loadSkus();
+  const idx = skus.findIndex(s => idsMatch(s.id, sku.id));
+  if (idx === -1) return;
+  skus[idx].anunciado = !skus[idx].anunciado;
+  try {
+    await saveSkus(skus);
+    showToast('success', skus[idx].anunciado ? 'Produto anunciado' : 'Anúncio removido', skus[idx].anunciado ? 'O produto agora aparece em Itens Anunciados.' : 'O produto não aparece mais em Itens Anunciados.');
+    renderProductDetail();
+  } catch (err) { handleAsyncError(err, 'Erro ao atualizar status de anúncio.'); }
+}
+
+function renderAnunciados() {
+  const grid = document.getElementById('anunciados-grid');
+  if (!grid) return;
+  const items = loadSkus().filter(s => s.anunciado);
+  if (items.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><p>Nenhum item anunciado ainda. Abra um produto no Estoque e clique em "Marcar como Anunciado".</p></div>`;
+    return;
+  }
+  grid.innerHTML = items.map(s => `
+    <div class="entrada-card">
+      <div class="entrada-card-top">
+        <div class="entrada-card-emoji">${s.emoji || '📦'}</div>
+        <div>
+          <button class="product-link entrada-card-name" onclick="openProductDetail('${s.id}')">${s.name}</button>
+          <div class="entrada-card-sku">${s.code}</div>
+        </div>
+      </div>
+      <div class="entrada-card-body">
+        <div>
+          <div class="entrada-card-stat-label">Custo Médio</div>
+          <div class="entrada-card-stat-value">${fmt(s.cost || 0)}</div>
+        </div>
+        <div>
+          <div class="entrada-card-stat-label">Estoque atual</div>
+          <div class="entrada-card-stat-value">${s.qty} un</div>
+        </div>
+      </div>
+      <div class="entrada-card-footer">
+        <button class="mini-view-btn" onclick="openProductDetail('${s.id}')">Ver produto</button>
+      </div>
+    </div>
+  `).join('');
+}
+
 function setDetailMovFilter(filter) { detailMovFilter = filter; renderProductDetail(); }
 function selectDetailTab(tab) { document.getElementById('tab-movs').classList.toggle('active', tab === 'movs'); document.getElementById('tab-costs').classList.toggle('active', tab === 'costs'); document.getElementById('detail-movs-tab').classList.toggle('hidden', tab !== 'movs'); document.getElementById('detail-costs-tab').classList.toggle('hidden', tab !== 'costs'); }
 function selectDetailMovType(type) { detailMovType = type; document.getElementById('prod-type-entrada').classList.toggle('selected', type === 'entrada'); document.getElementById('prod-type-saida').classList.toggle('selected', type === 'saida'); const costField = document.getElementById('prod-cost-field'); const costInput = document.getElementById('prod-mov-cost'); if (type === 'saida') { costField.style.display = 'none'; costInput.value = ''; } else { costField.style.display = ''; const sku = getCurrentSku(); if (sku) costInput.value = formatMoneyInputValue(sku.cost || 0); } }
@@ -3370,6 +3437,7 @@ function rerenderActivePage() {
 
   if (pageId === 'page-dashboard') renderDashboard();
   else if (pageId === 'page-estoque') { renderKpis(); renderTable(); }
+  else if (pageId === 'page-anunciados') renderAnunciados();
   else if (pageId === 'page-entradas') renderEntradas();
   else if (pageId === 'page-produto-detalhe') renderProductDetail();
   else if (pageId === 'page-compras') switchSubpage(currentSubpage || 'compras');
