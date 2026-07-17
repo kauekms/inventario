@@ -2257,7 +2257,7 @@ async function toggleAnunciado(id, event) {
     showToast('success', nowAnunciado ? 'Produto anunciado' : 'Anúncio removido', nowAnunciado ? 'O produto agora aparece em Itens Anunciados.' : 'O produto não aparece mais em Itens Anunciados.');
     renderTable();
     if (document.getElementById('page-produto-detalhe').classList.contains('active')) renderProductDetail();
-    if (nowAnunciado) { navigate('anunciados'); } else { renderAnunciados(); }
+    renderAnunciados();
   } catch (err) { handleAsyncError(err, 'Erro ao atualizar status de anúncio.'); }
 }
 
