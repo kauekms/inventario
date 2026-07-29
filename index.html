@@ -3808,7 +3808,7 @@
           placeholder="Detalhes adicionais da movimentação, se necessário."></textarea>
       </div>
       <div class="modal-footer"><button class="btn btn-ghost" onclick="closeProductMovModal()">Cancelar</button><button
-          class="btn btn-primary" onclick="saveDetailMovimentacao()">Salvar</button></div>
+          class="btn btn-primary" id="btn-save-movimentacao" onclick="saveDetailMovimentacao()">Salvar</button></div>
     </div>
   </div>
 
@@ -4070,6 +4070,18 @@
       return next;
     }
 
+    // Atualiza UMA linha específica (update pontual), em vez de reenviar a
+    // coleção inteira. Isso evita que um snapshot local desatualizado
+    // sobrescreva/reverta alterações feitas por outra ação (ex: uma
+    // movimentação de estoque) que aconteceu entre a leitura e o salvamento.
+    async function updateRowById(table, cacheKey, id, dbPatch, localPatch) {
+      assertSupabase();
+      const { error } = await db.from(table).update(dbPatch).eq('id', id);
+      if (error) throw error;
+      const idx = appData[cacheKey].findIndex(r => String(r.id) === String(id));
+      if (idx !== -1) appData[cacheKey][idx] = { ...appData[cacheKey][idx], ...(localPatch || {}) };
+    }
+
     async function deleteById(table, cacheKey, id) {
       assertSupabase();
       const { error } = await db.from(table).delete().eq('id', id);
@@ -4085,6 +4097,7 @@
     async function saveContas(rows) { return persistCollection('contas', 'contas', rows, mapContaToDb); }
 
     let currentProductId = null;
+    let movClientRef = null;
     let detailMovFilter = 'todos';
     let detailMovType = 'entrada';
     let productKind = 'unitario';
@@ -4136,6 +4149,33 @@
         highlightComprasSubnav('contas');
         renderContas();
       }
+      salvarUltimaPagina(page);
+    }
+
+    // ─── PERSISTÊNCIA DE PÁGINA (mantém a página ao atualizar/F5) ───────────────
+    function salvarUltimaPagina(page, extra) {
+      try {
+        const dados = { page, productId: extra && extra.productId ? extra.productId : (page === 'produto-detalhe' ? currentProductId : null), subpage: page === 'compras' ? currentSubpage : null };
+        localStorage.setItem('ultimaPagina', JSON.stringify(dados));
+      } catch (e) { /* localStorage indisponível: ignora silenciosamente */ }
+    }
+    function restaurarUltimaPagina() {
+      let dados = null;
+      try { dados = JSON.parse(localStorage.getItem('ultimaPagina') || 'null'); } catch (e) { dados = null; }
+      if (!dados || !dados.page) { navigate('dashboard'); return; }
+
+      if (dados.page === 'produto-detalhe' && dados.productId) {
+        const existe = loadSkus().some(s => idsMatch(s.id, dados.productId));
+        if (!existe) { navigate('dashboard'); return; }
+        currentProductId = dados.productId;
+        detailMovFilter = 'todos';
+        navigate('produto-detalhe');
+        return;
+      }
+      if (dados.page === 'compras' && dados.subpage) currentSubpage = dados.subpage;
+
+      const paginasValidas = ['dashboard', 'estoque', 'anunciados', 'entradas', 'logs', 'compras', 'contas'];
+      navigate(paginasValidas.includes(dados.page) ? dados.page : 'dashboard');
     }
     // ESC fecha modal aberto
     document.addEventListener('keydown', e => {
@@ -4192,6 +4232,7 @@
         document.getElementById('compras-page-actions').innerHTML = '';
         renderFinanceiro(); renderCartoes();
       }
+      salvarUltimaPagina('compras');
     }
     function openModal(name) { const modal = document.getElementById('modal-' + name); if (modal) modal.classList.add('open'); }
     function closeModal(name) { const modal = document.getElementById('modal-' + name); if (modal) modal.classList.remove('open'); }
@@ -4238,14 +4279,17 @@
       if (skus.find(s => (s.code || '').toLowerCase() === code.toLowerCase())) { showToast('error', 'SKU duplicado', 'Já existe um produto com este SKU.'); return; }
 
       const newId = makeId();
-      skus.push({
+      const novoProduto = {
         id: newId, name, code, kind: productKind, emoji: productKind === 'kit' ? '🧩' : '📦',
         cost: 0, packageCost: 0, tax: 'Padrão da conta', qty: 0, min: 5, ads: 0,
         sync: false, createdAt: new Date().toISOString()
-      });
+      };
 
       try {
-        await saveSkus(skus);
+        assertSupabase();
+        const { error } = await db.from('produtos').insert(mapSkuToDb(novoProduto));
+        if (error) throw error;
+        appData.skus.push(novoProduto);
         closeModal('cadastro-produto');
         showToast('success', 'Produto cadastrado', `${name} foi criado com sucesso.`);
         renderKpis(); renderTable(); openProductDetail(newId);
@@ -4358,16 +4402,20 @@
       const dup = skus.find(s => !idsMatch(s.id, currentProductId) && (s.code || '').toLowerCase() === code.toLowerCase());
       if (dup) { showToast('error', 'SKU duplicado', 'Já existe outro produto com este SKU.'); return; }
 
-      skus[idx].name = name;
-      skus[idx].code = code;
-      skus[idx].kind = editProductKind;
-      skus[idx].emoji = editProductKind === 'kit' ? '🧩' : (skus[idx].emoji || '📦');
-
-      const movs = loadMovs().map(m => idsMatch(m.skuId, currentProductId) ? { ...m, skuName: name } : m);
+      const emoji = editProductKind === 'kit' ? '🧩' : (skus[idx].emoji || '📦');
 
       try {
-        await saveSkus(skus);
-        await saveMovs(movs);
+        await updateRowById('produtos', 'skus', currentProductId,
+          { name, code, kind: editProductKind, emoji },
+          { name, code, kind: editProductKind, emoji });
+
+        // Atualiza o nome do SKU nas movimentações já registradas, direto no
+        // banco (update pontual), sem reenviar a tabela inteira.
+        assertSupabase();
+        const { error: movErr } = await db.from('movimentacoes').update({ sku_name: name }).eq('sku_id', currentProductId);
+        if (movErr) throw movErr;
+        appData.movs = appData.movs.map(m => idsMatch(m.skuId, currentProductId) ? { ...m, skuName: name } : m);
+
         closeEditProductModal();
         showToast('success', 'Produto atualizado', 'As alterações foram salvas.');
         renderProductDetail(); renderKpis(); renderTable(); renderDashboard();
@@ -4375,14 +4423,12 @@
     }
     async function toggleAnunciado(id, event) {
       if (event) event.stopPropagation();
-      const skus = loadSkus();
-      const idx = skus.findIndex(s => idsMatch(s.id, id));
-      if (idx === -1) return;
-      skus[idx].anunciado = !skus[idx].anunciado;
+      const sku = loadSkus().find(s => idsMatch(s.id, id));
+      if (!sku) return;
+      const novoValor = !sku.anunciado;
       try {
-        await saveSkus(skus);
-        const nowAnunciado = skus[idx].anunciado;
-        showToast('success', nowAnunciado ? 'Produto anunciado' : 'Anúncio removido', nowAnunciado ? 'O produto agora aparece em Itens Anunciados.' : 'O produto não aparece mais em Itens Anunciados.');
+        await updateRowById('produtos', 'skus', id, { anunciado: novoValor }, { anunciado: novoValor });
+        showToast('success', novoValor ? 'Produto anunciado' : 'Anúncio removido', novoValor ? 'O produto agora aparece em Itens Anunciados.' : 'O produto não aparece mais em Itens Anunciados.');
         renderTable();
         if (document.getElementById('page-produto-detalhe').classList.contains('active')) renderProductDetail();
         renderAnunciados();
@@ -4391,13 +4437,12 @@
 
     async function toggleSupermercado(id, event) {
       if (event) event.stopPropagation();
-      const skus = loadSkus();
-      const idx = skus.findIndex(s => idsMatch(s.id, id));
-      if (idx === -1) return;
-      skus[idx].super = !skus[idx].super;
+      const sku = loadSkus().find(s => idsMatch(s.id, id));
+      if (!sku) return;
+      const novoValor = !sku.super;
       try {
-        await saveSkus(skus);
-        showToast('success', skus[idx].super ? 'Marcado como Supermercado' : 'Removido de Supermercado', skus[idx].super ? 'O produto agora é de supermercado.' : 'O produto voltou ao normal.');
+        await updateRowById('produtos', 'skus', id, { super: novoValor }, { super: novoValor });
+        showToast('success', novoValor ? 'Marcado como Supermercado' : 'Removido de Supermercado', novoValor ? 'O produto agora é de supermercado.' : 'O produto voltou ao normal.');
         renderTable();
         if (document.getElementById('page-produto-detalhe').classList.contains('active')) renderProductDetail();
       } catch (err) { handleAsyncError(err, 'Erro ao atualizar status de supermercado.'); }
@@ -4445,6 +4490,12 @@
       const sku = getCurrentSku();
       if (!sku) { alert('Produto não encontrado.'); return; }
 
+      // Chave de idempotência única para esta intenção de movimentação.
+      // Enviada ao banco junto com o registro; se por algum motivo a mesma
+      // ação for reenviada (ex: retry de rede), o banco reconhece e não
+      // duplica a movimentação nem mexe no estoque de novo.
+      movClientRef = makeId();
+
       const qtyEl = document.getElementById('prod-mov-qty');
       const costEl = document.getElementById('prod-mov-cost');
       const reasonEl = document.getElementById('prod-mov-reason');
@@ -4459,36 +4510,50 @@
       openModal('prod-mov');
     }
     function closeProductMovModal() { closeModal('prod-mov'); }
+    let isSavingMovimentacao = false;
     async function saveDetailMovimentacao() {
-      const qty = parseInt(document.getElementById('prod-mov-qty').value, 10);
-      const sku = getCurrentSku();
-      if (!sku) { alert('Produto não encontrado.'); return; }
-
-      const costInput = document.getElementById('prod-mov-cost');
-      const reasonInput = document.getElementById('prod-mov-reason');
-      const notesInput = document.getElementById('prod-mov-notes');
-      const cost = detailMovType === 'entrada'
-        ? (parseMoneyInputValue(costInput ? costInput.value : '') || Number(sku.cost) || 0)
-        : (Number(sku.cost) || 0);
-      const reason = reasonInput ? reasonInput.value.trim() : '';
-      const notes = notesInput ? notesInput.value.trim() : '';
+      // Trava de reentrância: evita que um duplo clique (ou um clique repetido
+      // enquanto a rede ainda responde) dispare duas chamadas RPC e gere
+      // movimentação duplicada / estoque incorreto.
+      if (isSavingMovimentacao) return;
+      isSavingMovimentacao = true;
+      setButtonLoading('btn-save-movimentacao', true);
 
       try {
+        const qty = parseInt(document.getElementById('prod-mov-qty').value, 10);
+        const sku = getCurrentSku();
+        if (!sku) { alert('Produto não encontrado.'); return; }
+
+        const costInput = document.getElementById('prod-mov-cost');
+        const reasonInput = document.getElementById('prod-mov-reason');
+        const notesInput = document.getElementById('prod-mov-notes');
+        const cost = detailMovType === 'entrada'
+          ? (parseMoneyInputValue(costInput ? costInput.value : '') || Number(sku.cost) || 0)
+          : (Number(sku.cost) || 0);
+        const reason = reasonInput ? reasonInput.value.trim() : '';
+        const notes = notesInput ? notesInput.value.trim() : '';
+
         const result = await createMovementForSku({
           skuId: currentProductId,
           type: detailMovType,
           qty,
           cost,
           note: reason || (detailMovType === 'entrada' ? 'Entrada de estoque' : 'Saída de estoque'),
-          notes
+          notes,
+          clientRef: movClientRef
         });
         if (!result.ok) { alert(result.message); return; }
+        movClientRef = null;
         closeProductMovModal();
         showToast('success', 'Movimentação registrada', `${detailMovType === 'entrada' ? 'Entrada' : 'Saída'} salva no estoque.`);
         renderProductDetail(); renderKpis(); renderTable(); renderDashboard();
       } catch (err) { handleAsyncError(err, 'Erro ao salvar movimentação.'); }
+      finally {
+        isSavingMovimentacao = false;
+        setButtonLoading('btn-save-movimentacao', false, 'Salvar');
+      }
     }
-    async function createMovementForSku({ skuId, type, qty, cost = 0, note = '', notes = '' }) {
+    async function createMovementForSku({ skuId, type, qty, cost = 0, note = '', notes = '', clientRef = null }) {
       const sku = loadSkus().find(s => idsMatch(s.id, skuId));
       if (!sku) return { ok: false, message: 'Produto não encontrado.' };
       const movementQty = Number(qty) || 0;
@@ -4503,7 +4568,8 @@
         p_qty: movementQty,
         p_cost: movementCost,
         p_note: note || '',
-        p_notes: notes || ''
+        p_notes: notes || '',
+        p_client_ref: clientRef || null
       });
       if (error) return { ok: false, message: error.message };
 
@@ -5702,9 +5768,13 @@
         dashDate.textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
       }
 
-      // Mostra a interface imediatamente. Antes, a tela podia ficar em branco
-      // enquanto aguardava Supabase/CDN/rede responder.
-      navigate('dashboard');
+      // Mostra a interface imediatamente com a página do dashboard, para a
+      // tela não ficar em branco enquanto aguarda Supabase/CDN/rede responder.
+      // A página correta (se diferente) é restaurada logo depois, já com os
+      // dados carregados — assim uma atualização (F5) não te joga de volta
+      // para o Início.
+      document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-dashboard').classList.add('active');
 
       try {
         await setupSupabaseClient();
@@ -5713,7 +5783,7 @@
         handleAsyncError(err, 'Não foi possível iniciar o sistema.');
       }
 
-      rerenderActivePage();
+      restaurarUltimaPagina();
     }
 
     window.addEventListener('error', function (event) {
