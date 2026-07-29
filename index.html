@@ -4001,9 +4001,25 @@
 
     async function fetchTable(table, orderColumn = 'created_at', ascending = true) {
       assertSupabase();
-      const { data, error } = await db.from(table).select('*').order(orderColumn, { ascending });
-      if (error) throw error;
-      return data || [];
+      // O Supabase/PostgREST limita cada requisição a 1000 linhas por padrão.
+      // Sem paginação, tabelas com mais de 1000 registros (ex: system_logs)
+      // ficam "travadas" sempre nas mesmas 1000 primeiras linhas. Aqui
+      // buscamos em páginas até não haver mais dados.
+      const pageSize = 1000;
+      let from = 0;
+      let allRows = [];
+      while (true) {
+        const { data, error } = await db.from(table)
+          .select('*')
+          .order(orderColumn, { ascending })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allRows = allRows.concat(data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      return allRows;
     }
 
     async function loadAllData() {
