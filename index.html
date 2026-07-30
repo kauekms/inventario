@@ -3204,7 +3204,7 @@
             <div></div>
             <div>Produto</div>
             <div>Estoque</div>
-            <div>Preço de Custo</div>
+            <div>Custo Médio</div>
             <div>Total em Estoque</div>
             <div>Últ. Movimentação</div>
             <div>Ações</div>
@@ -3300,13 +3300,14 @@
           </div>
           <div class="detail-actions">
             <button type="button" class="btn btn-ghost" onclick="openEditProductModal()">Editar cadastro</button>
+            <button type="button" class="btn btn-ghost" onclick="openRedefinirCustoModal()" style="border-color:var(--accent);color:var(--accent)">Redefinir Custo Médio</button>
             <button type="button" class="btn btn-danger" onclick="openDeleteProductModal()">Excluir</button>
           </div>
         </div>
 
         <div class="detail-cards" style="grid-template-columns: repeat(2, 1fr); max-width: 540px;">
           <div class="detail-card">
-            <div class="detail-card-label"><span>Custo p/ Unid ⓘ</span><span>$</span></div>
+            <div class="detail-card-label"><span>Custo Médio ⓘ</span><span>$</span></div>
             <div class="detail-card-value" id="detail-average-cost">R$ 0,00</div>
           </div>
           <div class="detail-card">
@@ -3768,6 +3769,35 @@
       </div>
     </div>
   </div>
+
+  <div class="modal-overlay" id="modal-redefinir-custo">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Redefinir Custo Médio</h2>
+          <p>Informe o novo custo médio e a quantidade atual do produto.</p>
+        </div>
+        <div class="close-btn" onclick="closeRedefinirCustoModal()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Novo Custo Médio (R$)</label>
+        <input class="form-input" id="redefinir-custo-valor" placeholder="Ex: 25,50" type="text" inputmode="decimal">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Quantidade Atual</label>
+        <input class="form-input" id="redefinir-custo-qty" placeholder="Ex: 10" type="number" min="0">
+      </div>
+      <div class="modal-footer" style="margin-top:22px">
+        <button class="btn btn-ghost" onclick="closeRedefinirCustoModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-redefinir-custo" onclick="saveRedefinirCusto()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="modal-prod-mov">
     <div class="modal">
       <div class="modal-header">
@@ -4408,6 +4438,30 @@
     function selectEditProductKind(kind) { editProductKind = kind; const isUnit = kind === 'unitario'; document.getElementById('edit-prod-unitario').checked = isUnit; document.getElementById('edit-prod-kit').checked = !isUnit; document.getElementById('edit-card-unitario').classList.toggle('selected', isUnit); document.getElementById('edit-card-kit').classList.toggle('selected', !isUnit); }
     function openEditProductModal() { const sku = getCurrentSku(); if (!sku) return; document.getElementById('edit-prod-name').value = sku.name || ''; document.getElementById('edit-prod-sku').value = sku.code || ''; selectEditProductKind(sku.kind === 'kit' ? 'kit' : 'unitario'); openModal('edit-product'); }
     function closeEditProductModal() { closeModal('edit-product'); }
+    function openRedefinirCustoModal() {
+      const sku = getCurrentSku();
+      if (!sku) { alert('Produto não encontrado.'); return; }
+      document.getElementById('redefinir-custo-valor').value = formatMoneyInputValue(sku.cost || 0);
+      document.getElementById('redefinir-custo-qty').value = sku.qty || 0;
+      openModal('redefinir-custo');
+    }
+    function closeRedefinirCustoModal() { closeModal('redefinir-custo'); }
+    async function saveRedefinirCusto() {
+      const sku = getCurrentSku();
+      if (!sku) { showToast('error', 'Erro', 'Produto não encontrado.'); return; }
+      const novoCusto = parseMoneyInputValue(document.getElementById('redefinir-custo-valor').value);
+      const novaQty = parseInt(document.getElementById('redefinir-custo-qty').value, 10);
+      if (isNaN(novoCusto) || novoCusto < 0) { showToast('warning', 'Campo inválido', 'Informe um custo médio válido.'); return; }
+      if (isNaN(novaQty) || novaQty < 0) { showToast('warning', 'Campo inválido', 'Informe uma quantidade válida.'); return; }
+      try {
+        await updateRowById('produtos', 'skus', currentProductId,
+          { cost: novoCusto, qty: novaQty },
+          { cost: novoCusto, qty: novaQty });
+        closeRedefinirCustoModal();
+        showToast('success', 'Custo médio redefinido', `Novo custo: ${fmt(novoCusto)} · Quantidade: ${novaQty}`);
+        renderProductDetail(); renderKpis(); renderTable(); renderDashboard();
+      } catch (err) { handleAsyncError(err, 'Erro ao redefinir custo médio.'); }
+    }
     async function saveEditedProduct() {
       const name = document.getElementById('edit-prod-name').value.trim();
       const code = document.getElementById('edit-prod-sku').value.trim();

@@ -155,6 +155,7 @@ DECLARE
   v_prod public.produtos%ROWTYPE;
   v_new_qty INTEGER;
   v_cost NUMERIC(12,2);
+  v_avg_cost NUMERIC(12,2);
   v_mov_id UUID;
 BEGIN
   IF p_type NOT IN ('entrada','saida') THEN
@@ -183,12 +184,23 @@ BEGIN
   IF p_type = 'entrada' THEN
     v_new_qty := v_prod.qty + p_qty;
 
+    -- Custo médio ponderado: (custo_atual × qtd_atual + custo_entrada × qtd_entrada) / nova_qtd
+    IF v_new_qty > 0 THEN
+      v_avg_cost := ROUND(
+        (COALESCE(v_prod.cost, 0) * COALESCE(v_prod.qty, 0) + v_cost * p_qty) / v_new_qty,
+        2
+      );
+    ELSE
+      v_avg_cost := v_cost;
+    END IF;
+
     UPDATE public.produtos
     SET qty = v_new_qty,
-        cost = v_cost
+        cost = v_avg_cost
     WHERE id = p_sku_id;
   ELSE
     v_new_qty := v_prod.qty - p_qty;
+    v_avg_cost := v_prod.cost;  -- saída não altera custo médio
 
     UPDATE public.produtos
     SET qty = v_new_qty
@@ -220,7 +232,7 @@ BEGIN
     v_prod.qty,
     v_new_qty,
     v_prod.cost,
-    CASE WHEN p_type = 'entrada' THEN v_cost ELSE v_prod.cost END,
+    v_avg_cost,
     NOW()
   )
   RETURNING id INTO v_mov_id;
@@ -230,7 +242,7 @@ BEGIN
     'sku_id', p_sku_id,
     'movimentacao_id', v_mov_id,
     'qty_after', v_new_qty,
-    'cost_after', CASE WHEN p_type = 'entrada' THEN v_cost ELSE v_prod.cost END
+    'cost_after', v_avg_cost
   );
 END;
 $$;
