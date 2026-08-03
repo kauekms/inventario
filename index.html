@@ -985,7 +985,7 @@
     /* ── PÁGINAS ── */
     #page-dashboard,
     #page-estoque,
-    #page-entradas,
+    #page-movimentacoes,
     #page-produto-detalhe,
     #page-compras,
     #page-contas,
@@ -996,7 +996,7 @@
 
     #page-dashboard.active,
     #page-estoque.active,
-    #page-entradas.active,
+    #page-movimentacoes.active,
     #page-produto-detalhe.active,
     #page-compras.active,
     #page-contas.active,
@@ -2685,8 +2685,15 @@
       <div class="nav-sub" id="produtos-sub" style="display:none">
         <a class="nav-item" id="nav-estoque" onclick="navigate('estoque'); closeSidebar()">Estoque</a>
         <a class="nav-item" id="nav-anunciados" onclick="navigate('anunciados'); closeSidebar()">Itens Anunciados</a>
-        <a class="nav-item" id="nav-entradas" onclick="navigate('entradas'); closeSidebar()">Últimas Entradas</a>
       </div>
+
+      <a class="nav-item" id="nav-movimentacoes" onclick="navigate('movimentacoes'); closeSidebar()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+            d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+        Movimentações
+      </a>
 
       <a class="nav-item" id="nav-compras" onclick="toggleSubmenu('compras-sub')">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3224,29 +3231,34 @@
         <div class="entradas-grid" id="anunciados-grid"></div>
       </div>
 
-      <div id="page-entradas">
+      <div id="page-movimentacoes">
         <div class="page-header">
           <div class="page-title">
-            <h1>Últimas Entradas</h1>
-            <p>A movimentação de entrada mais recente registrada em cada produto</p>
+            <h1>Movimentações</h1>
+            <p id="movs-subtitle">A movimentação de entrada mais recente registrada em cada produto</p>
           </div>
+        </div>
+
+        <div class="detail-tabs" style="margin-bottom:20px">
+          <button class="detail-tab active" id="tab-mov-entrada" onclick="selectMovTab('entrada')">Entradas</button>
+          <button class="detail-tab" id="tab-mov-saida" onclick="selectMovTab('saida')">Saídas</button>
         </div>
 
         <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
           <div class="kpi-card">
-            <div class="kpi-label">Produtos com Entrada</div>
-            <div class="kpi-value" id="entradas-kpi-produtos">0</div>
-            <div class="kpi-sub">com ao menos 1 entrada registrada</div>
+            <div class="kpi-label" id="movs-kpi-produtos-label">Produtos com Entrada</div>
+            <div class="kpi-value" id="movs-kpi-produtos">0</div>
+            <div class="kpi-sub" id="movs-kpi-produtos-sub">com ao menos 1 entrada registrada</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Entradas nos últimos 7 dias</div>
-            <div class="kpi-value" id="entradas-kpi-recentes" style="color:var(--green)">0</div>
-            <div class="kpi-sub">movimentações de entrada</div>
+            <div class="kpi-label" id="movs-kpi-recentes-label">Entradas nos últimos 7 dias</div>
+            <div class="kpi-value" id="movs-kpi-recentes" style="color:var(--green)">0</div>
+            <div class="kpi-sub">movimentações no período</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Unidades recebidas (7 dias)</div>
-            <div class="kpi-value" id="entradas-kpi-unidades">0</div>
-            <div class="kpi-sub">unidades entraram no estoque</div>
+            <div class="kpi-label" id="movs-kpi-unidades-label">Unidades recebidas (7 dias)</div>
+            <div class="kpi-value" id="movs-kpi-unidades">0</div>
+            <div class="kpi-sub" id="movs-kpi-unidades-sub">unidades entraram no estoque</div>
           </div>
         </div>
 
@@ -3256,25 +3268,38 @@
               <circle cx="11" cy="11" r="8" stroke-width="1.8" />
               <path stroke-linecap="round" stroke-width="1.8" d="M21 21l-4.35-4.35" />
             </svg>
-            <input type="text" id="entradas-search" placeholder="Buscar por código ou nome..."
-              oninput="renderEntradas()">
+            <input type="text" id="movs-search" placeholder="Buscar por código ou nome..."
+              oninput="renderMovimentacoes()">
           </div>
-          <div class="custom-select-wrap sm" id="cs-filter-mes">
-            <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-filter-mes')">
-              <span class="custom-select-trigger-text" id="cs-filter-mes-label">Todos os meses</span>
+          <div class="custom-select-wrap sm" id="cs-filter-mes-mov">
+            <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-filter-mes-mov')">
+              <span class="custom-select-trigger-text" id="cs-filter-mes-mov-label">Todos os meses</span>
             </div>
             <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor"
               viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
             </svg>
-            <div class="custom-select-dropdown" id="cs-filter-mes-dropdown"></div>
+            <div class="custom-select-dropdown" id="cs-filter-mes-mov-dropdown"></div>
           </div>
-          <select id="filter-mes" style="display:none" onchange="renderEntradas()">
+          <select id="filter-mes-mov" style="display:none" onchange="renderMovimentacoes()">
             <option value="todos">Todos os meses</option>
+          </select>
+          <div class="custom-select-wrap sm" id="cs-filter-ano-mov">
+            <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-filter-ano-mov')">
+              <span class="custom-select-trigger-text" id="cs-filter-ano-mov-label">Todos os anos</span>
+            </div>
+            <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+            </svg>
+            <div class="custom-select-dropdown" id="cs-filter-ano-mov-dropdown"></div>
+          </div>
+          <select id="filter-ano-mov" style="display:none" onchange="renderMovimentacoes()">
+            <option value="todos">Todos os anos</option>
           </select>
         </div>
 
-        <div class="entradas-grid" id="entradas-grid"></div>
+        <div class="entradas-grid" id="movs-grid"></div>
       </div>
 
       <div id="page-produto-detalhe">
@@ -4150,6 +4175,7 @@
     let editProductKind = 'unitario';
     let finType = 'receita';
     let currentSubpage = 'compras';
+    let currentMovTab = 'entrada';
     let editCompraId = null;
     let editCartaoId = null;
     let editContaId = null;
@@ -4162,7 +4188,7 @@
       dashboard: ['Dashboard', 'Início'],
       estoque: ['Produtos', 'Estoque'],
       anunciados: ['Produtos', 'Itens Anunciados'],
-      entradas: ['Produtos', 'Últimas Entradas'],
+      movimentacoes: ['Operação', 'Movimentações'],
       'produto-detalhe': ['Produtos', 'Detalhe do Produto'],
       logs: ['Sistema', 'Logs de Auditoria'],
       compras: ['Operação', 'Compras'],
@@ -4179,7 +4205,7 @@
       if (page === 'dashboard') { document.getElementById('nav-dashboard').classList.add('active'); document.getElementById('page-dashboard').classList.add('active'); renderDashboard(); }
       else if (page === 'estoque') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-estoque').classList.add('active'); renderKpis(); renderTable(); }
       else if (page === 'anunciados') { document.getElementById('nav-anunciados').classList.add('active'); document.getElementById('page-anunciados').classList.add('active'); renderAnunciados(); }
-      else if (page === 'entradas') { document.getElementById('nav-entradas').classList.add('active'); document.getElementById('page-entradas').classList.add('active'); renderEntradas(); }
+      else if (page === 'movimentacoes') { document.getElementById('nav-movimentacoes').classList.add('active'); document.getElementById('page-movimentacoes').classList.add('active'); renderMovimentacoes(); }
       else if (page === 'produto-detalhe') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-produto-detalhe').classList.add('active'); renderProductDetail(); }
       else if (page === 'logs') { document.getElementById('nav-logs').classList.add('active'); document.getElementById('page-logs').classList.add('active'); refreshLogs({ silent: true }); }
       else if (page === 'compras') {
@@ -4201,7 +4227,7 @@
     // ─── PERSISTÊNCIA DE PÁGINA (mantém a página ao atualizar/F5) ───────────────
     function salvarUltimaPagina(page, extra) {
       try {
-        const dados = { page, productId: extra && extra.productId ? extra.productId : (page === 'produto-detalhe' ? currentProductId : null), subpage: page === 'compras' ? currentSubpage : null };
+        const dados = { page, productId: extra && extra.productId ? extra.productId : (page === 'produto-detalhe' ? currentProductId : null), subpage: page === 'compras' ? currentSubpage : null, movTab: page === 'movimentacoes' ? currentMovTab : null };
         localStorage.setItem('ultimaPagina', JSON.stringify(dados));
       } catch (e) { /* localStorage indisponível: ignora silenciosamente */ }
     }
@@ -4219,8 +4245,9 @@
         return;
       }
       if (dados.page === 'compras' && dados.subpage) currentSubpage = dados.subpage;
+      if (dados.page === 'movimentacoes' && dados.movTab) currentMovTab = dados.movTab;
 
-      const paginasValidas = ['dashboard', 'estoque', 'anunciados', 'entradas', 'logs', 'compras', 'contas'];
+      const paginasValidas = ['dashboard', 'estoque', 'anunciados', 'movimentacoes', 'logs', 'compras', 'contas'];
       navigate(paginasValidas.includes(dados.page) ? dados.page : 'dashboard');
     }
     // ESC fecha modal aberto
@@ -4359,59 +4386,88 @@
     }
     function monthKey(iso) { const d = new Date(iso); if (Number.isNaN(d.getTime())) return null; return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
     function monthLabel(key) { const [y, m] = key.split('-').map(Number); const d = new Date(y, m - 1, 1); const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }); return label.charAt(0).toUpperCase() + label.slice(1); }
-    function renderEntradas() {
+    const MESES_LABELS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+    function selectMovTab(tab) {
+      currentMovTab = tab === 'saida' ? 'saida' : 'entrada';
+      document.getElementById('tab-mov-entrada').classList.toggle('active', currentMovTab === 'entrada');
+      document.getElementById('tab-mov-saida').classList.toggle('active', currentMovTab === 'saida');
+      salvarUltimaPagina('movimentacoes');
+      renderMovimentacoes();
+    }
+
+    function renderMovimentacoes() {
       const skus = loadSkus();
       const movs = loadMovs();
-      const q = (document.getElementById('entradas-search').value || '').toLowerCase();
+      const q = (document.getElementById('movs-search').value || '').toLowerCase();
+      const tipo = currentMovTab === 'saida' ? 'saida' : 'entrada';
+      const isEntrada = tipo === 'entrada';
 
-      const allEntradasAll = movs.filter(m => m.type === 'entrada');
-      const monthKeys = [...new Set(allEntradasAll.map(m => monthKey(m.date)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
-      const monthOptions = [{ value: 'todos', label: 'Todos os meses' }, ...monthKeys.map(k => ({ value: k, label: monthLabel(k) }))];
-      const currentMesSelect = document.getElementById('filter-mes');
+      document.getElementById('movs-subtitle').textContent = isEntrada
+        ? 'A movimentação de entrada mais recente registrada em cada produto'
+        : 'A movimentação de saída mais recente registrada em cada produto';
+      document.getElementById('movs-kpi-produtos-label').textContent = isEntrada ? 'Produtos com Entrada' : 'Produtos com Saída';
+      document.getElementById('movs-kpi-produtos-sub').textContent = `com ao menos 1 ${isEntrada ? 'entrada' : 'saída'} registrada`;
+      document.getElementById('movs-kpi-recentes-label').textContent = `${isEntrada ? 'Entradas' : 'Saídas'} nos últimos 7 dias`;
+      document.getElementById('movs-kpi-recentes').style.color = isEntrada ? 'var(--green)' : 'var(--danger)';
+      document.getElementById('movs-kpi-unidades-label').textContent = `Unidades ${isEntrada ? 'recebidas' : 'expedidas'} (7 dias)`;
+      document.getElementById('movs-kpi-unidades-sub').textContent = `unidades ${isEntrada ? 'entraram no' : 'saíram do'} estoque`;
+
+      const allDoTipo = movs.filter(m => m.type === tipo);
+
+      // Filtro de Ano (dinâmico, com base nos dados existentes)
+      const years = [...new Set(allDoTipo.map(m => { const d = new Date(m.date); return Number.isNaN(d.getTime()) ? null : d.getFullYear(); }).filter(Boolean))].sort((a, b) => b - a);
+      const yearOptions = [{ value: 'todos', label: 'Todos os anos' }, ...years.map(y => ({ value: String(y), label: String(y) }))];
+      const currentAnoSelect = document.getElementById('filter-ano-mov');
+      const selectedAno = currentAnoSelect ? currentAnoSelect.value : 'todos';
+      rebuildCustomSelect('cs-filter-ano-mov', yearOptions, selectedAno);
+      const anoFilter = document.getElementById('filter-ano-mov').value || 'todos';
+
+      // Filtro de Mês (fixo, Janeiro a Dezembro)
+      const mesOptions = [{ value: 'todos', label: 'Todos os meses' }, ...MESES_LABELS.map((label, idx) => ({ value: String(idx + 1), label }))];
+      const currentMesSelect = document.getElementById('filter-mes-mov');
       const selectedMes = currentMesSelect ? currentMesSelect.value : 'todos';
-      rebuildCustomSelect('cs-filter-mes', monthOptions, selectedMes);
-      const mesFilter = document.getElementById('filter-mes').value || 'todos';
+      rebuildCustomSelect('cs-filter-mes-mov', mesOptions, selectedMes);
+      const mesFilter = document.getElementById('filter-mes-mov').value || 'todos';
 
       const rows = skus.map(s => {
-        const entradas = movs.filter(m => idsMatch(m.skuId, s.id) && m.type === 'entrada');
-        if (!entradas.length) return null;
-        const last = entradas.reduce((a, b) => new Date(b.date) > new Date(a.date) ? b : a);
-        return { sku: s, last, avgCost: computeAverageCost(entradas), totalEntradas: entradas.length };
+        const items = movs.filter(m => idsMatch(m.skuId, s.id) && m.type === tipo);
+        if (!items.length) return null;
+        const last = items.reduce((a, b) => new Date(b.date) > new Date(a.date) ? b : a);
+        const entradasDoSku = movs.filter(m => idsMatch(m.skuId, s.id) && m.type === 'entrada');
+        return { sku: s, last, avgCost: computeAverageCost(entradasDoSku), totalItems: items.length };
       }).filter(Boolean)
         .filter(r => !q || r.sku.name.toLowerCase().includes(q) || r.sku.code.toLowerCase().includes(q))
-        .filter(r => mesFilter === 'todos' || monthKey(r.last.date) === mesFilter);
+        .filter(r => {
+          const d = new Date(r.last.date);
+          if (Number.isNaN(d.getTime())) return mesFilter === 'todos' && anoFilter === 'todos';
+          const okMes = mesFilter === 'todos' || (d.getMonth() + 1) === Number(mesFilter);
+          const okAno = anoFilter === 'todos' || d.getFullYear() === Number(anoFilter);
+          return okMes && okAno;
+        });
 
       rows.sort((a, b) => new Date(b.last.date) - new Date(a.last.date));
 
       const now = new Date();
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const recentes = allEntradasAll.filter(m => new Date(m.date) >= sevenDaysAgo);
-      document.getElementById('entradas-kpi-produtos').textContent = rows.length;
-      document.getElementById('entradas-kpi-recentes').textContent = recentes.length;
-      document.getElementById('entradas-kpi-unidades').textContent = recentes.reduce((a, m) => a + (Number(m.qty) || 0), 0);
+      const recentes = allDoTipo.filter(m => new Date(m.date) >= sevenDaysAgo);
+      document.getElementById('movs-kpi-produtos').textContent = rows.length;
+      document.getElementById('movs-kpi-recentes').textContent = recentes.length;
+      document.getElementById('movs-kpi-unidades').textContent = recentes.reduce((a, m) => a + (Number(m.qty) || 0), 0);
 
-      const grid = document.getElementById('entradas-grid');
+      const grid = document.getElementById('movs-grid');
       if (!rows.length) {
-        grid.innerHTML = `<div class="empty-state"><p>Nenhuma movimentação de entrada encontrada.</p></div>`;
+        grid.innerHTML = `<div class="empty-state"><p>Nenhuma movimentação de ${isEntrada ? 'entrada' : 'saída'} encontrada.</p></div>`;
         return;
       }
 
       grid.innerHTML = rows.map(r => {
         const s = r.sku, m = r.last;
-        return `
-      <div class="entrada-card">
-        <div class="entrada-card-top">
-          <div class="entrada-card-emoji">${s.emoji || '📦'}</div>
-          <div>
-            <div class="entrada-card-name">${escapeHtml(s.name)}</div>
-            <div class="entrada-card-sku">${escapeHtml(s.code)}</div>
-          </div>
-        </div>
-        <div class="entrada-card-date">Última entrada: ${fmtDate(m.date)}</div>
-        <div class="entrada-card-body">
+        const corSinal = isEntrada ? 'var(--green)' : 'var(--danger)';
+        const statsHtml = isEntrada ? `
           <div>
             <div class="entrada-card-stat-label">Qtd. recebida</div>
-            <div class="entrada-card-stat-value" style="color:var(--green)">+${m.qty} un</div>
+            <div class="entrada-card-stat-value" style="color:${corSinal}">+${m.qty} un</div>
           </div>
           <div>
             <div class="entrada-card-stat-label">Custo p/ Unid</div>
@@ -4424,7 +4480,34 @@
           <div>
             <div class="entrada-card-stat-label">Custo médio</div>
             <div class="entrada-card-stat-value">${fmt(r.avgCost)}</div>
+          </div>` : `
+          <div>
+            <div class="entrada-card-stat-label">Qtd. retirada</div>
+            <div class="entrada-card-stat-value" style="color:${corSinal}">-${m.qty} un</div>
           </div>
+          <div>
+            <div class="entrada-card-stat-label">Valor da baixa</div>
+            <div class="entrada-card-stat-value">${fmt((m.qty || 0) * (m.cost || 0))}</div>
+          </div>
+          <div>
+            <div class="entrada-card-stat-label">Estoque após</div>
+            <div class="entrada-card-stat-value">${m.qtyAfter !== undefined ? m.qtyAfter + ' un' : '—'}</div>
+          </div>
+          <div>
+            <div class="entrada-card-stat-label">Motivo</div>
+            <div class="entrada-card-stat-value" style="font-size:12px">${escapeHtml(m.note || '—')}</div>
+          </div>`;
+        return `
+      <div class="entrada-card">
+        <div class="entrada-card-top">
+          <div class="entrada-card-emoji">${s.emoji || '📦'}</div>
+          <div>
+            <div class="entrada-card-name">${escapeHtml(s.name)}</div>
+            <div class="entrada-card-sku">${escapeHtml(s.code)}</div>
+          </div>
+        </div>
+        <div class="entrada-card-date">Última ${isEntrada ? 'entrada' : 'saída'}: ${fmtDate(m.date)}</div>
+        <div class="entrada-card-body">${statsHtml}
         </div>
         <div class="entrada-card-footer">
           <button class="mini-view-btn" onclick="openProductDetail('${s.id}')">Ver produto</button>
@@ -5804,7 +5887,7 @@
       if (pageId === 'page-dashboard') renderDashboard();
       else if (pageId === 'page-estoque') { renderKpis(); renderTable(); }
       else if (pageId === 'page-anunciados') renderAnunciados();
-      else if (pageId === 'page-entradas') renderEntradas();
+      else if (pageId === 'page-movimentacoes') renderMovimentacoes();
       else if (pageId === 'page-produto-detalhe') renderProductDetail();
       else if (pageId === 'page-compras') switchSubpage(currentSubpage || 'compras');
       else if (pageId === 'page-contas') renderContas();
