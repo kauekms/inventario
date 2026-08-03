@@ -4404,16 +4404,27 @@
       const isEntrada = tipo === 'entrada';
 
       document.getElementById('movs-subtitle').textContent = isEntrada
-        ? 'A movimentação de entrada mais recente registrada em cada produto'
-        : 'A movimentação de saída mais recente registrada em cada produto';
-      document.getElementById('movs-kpi-produtos-label').textContent = isEntrada ? 'Produtos com Entrada' : 'Produtos com Saída';
-      document.getElementById('movs-kpi-produtos-sub').textContent = `com ao menos 1 ${isEntrada ? 'entrada' : 'saída'} registrada`;
+        ? 'Todas as movimentações de entrada registradas'
+        : 'Todas as movimentações de saída registradas';
+      document.getElementById('movs-kpi-produtos-label').textContent = isEntrada ? 'Total de Entradas' : 'Total de Saídas';
+      document.getElementById('movs-kpi-produtos-sub').textContent = `registros no filtro atual`;
       document.getElementById('movs-kpi-recentes-label').textContent = `${isEntrada ? 'Entradas' : 'Saídas'} nos últimos 7 dias`;
       document.getElementById('movs-kpi-recentes').style.color = isEntrada ? 'var(--green)' : 'var(--danger)';
       document.getElementById('movs-kpi-unidades-label').textContent = `Unidades ${isEntrada ? 'recebidas' : 'expedidas'} (7 dias)`;
       document.getElementById('movs-kpi-unidades-sub').textContent = `unidades ${isEntrada ? 'entraram no' : 'saíram do'} estoque`;
 
       const allDoTipo = movs.filter(m => m.type === tipo);
+      const skuById = new Map(skus.map(s => [String(s.id), s]));
+      // Custo médio (histórico de entradas) por produto, calculado uma vez para
+      // reutilizar em cada card de entrada, sem refazer o filtro a cada linha.
+      const entradasPorSku = new Map();
+      if (isEntrada) {
+        movs.filter(m => m.type === 'entrada').forEach(m => {
+          const key = String(m.skuId);
+          if (!entradasPorSku.has(key)) entradasPorSku.set(key, []);
+          entradasPorSku.get(key).push(m);
+        });
+      }
 
       // Filtro de Ano (dinâmico, com base nos dados existentes)
       const years = [...new Set(allDoTipo.map(m => { const d = new Date(m.date); return Number.isNaN(d.getTime()) ? null : d.getFullYear(); }).filter(Boolean))].sort((a, b) => b - a);
@@ -4430,23 +4441,23 @@
       rebuildCustomSelect('cs-filter-mes-mov', mesOptions, selectedMes);
       const mesFilter = document.getElementById('filter-mes-mov').value || 'todos';
 
-      const rows = skus.map(s => {
-        const items = movs.filter(m => idsMatch(m.skuId, s.id) && m.type === tipo);
-        if (!items.length) return null;
-        const last = items.reduce((a, b) => new Date(b.date) > new Date(a.date) ? b : a);
-        const entradasDoSku = movs.filter(m => idsMatch(m.skuId, s.id) && m.type === 'entrada');
-        return { sku: s, last, avgCost: computeAverageCost(entradasDoSku), totalItems: items.length };
-      }).filter(Boolean)
-        .filter(r => !q || r.sku.name.toLowerCase().includes(q) || r.sku.code.toLowerCase().includes(q))
+      // Cada movimentação vira uma linha própria — nada é agrupado/oculto por
+      // produto, então uma saída de 5 seguida de uma saída de 10 aparecem as duas.
+      const rows = allDoTipo.map(m => {
+        const sku = skuById.get(String(m.skuId)) || { id: m.skuId, name: m.skuName || 'Produto removido', code: '—', emoji: '📦' };
+        const avgCost = isEntrada ? computeAverageCost(entradasPorSku.get(String(m.skuId)) || []) : 0;
+        return { sku, mov: m, avgCost };
+      })
+        .filter(r => !q || r.sku.name.toLowerCase().includes(q) || (r.sku.code || '').toLowerCase().includes(q))
         .filter(r => {
-          const d = new Date(r.last.date);
+          const d = new Date(r.mov.date);
           if (Number.isNaN(d.getTime())) return mesFilter === 'todos' && anoFilter === 'todos';
           const okMes = mesFilter === 'todos' || (d.getMonth() + 1) === Number(mesFilter);
           const okAno = anoFilter === 'todos' || d.getFullYear() === Number(anoFilter);
           return okMes && okAno;
         });
 
-      rows.sort((a, b) => new Date(b.last.date) - new Date(a.last.date));
+      rows.sort((a, b) => new Date(b.mov.date) - new Date(a.mov.date));
 
       const now = new Date();
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -4462,7 +4473,7 @@
       }
 
       grid.innerHTML = rows.map(r => {
-        const s = r.sku, m = r.last;
+        const s = r.sku, m = r.mov;
         const corSinal = isEntrada ? 'var(--green)' : 'var(--danger)';
         const statsHtml = isEntrada ? `
           <div>
@@ -4506,7 +4517,7 @@
             <div class="entrada-card-sku">${escapeHtml(s.code)}</div>
           </div>
         </div>
-        <div class="entrada-card-date">Última ${isEntrada ? 'entrada' : 'saída'}: ${fmtDate(m.date)}</div>
+        <div class="entrada-card-date">${isEntrada ? 'Entrada em' : 'Saída em'} ${fmtDate(m.date)}</div>
         <div class="entrada-card-body">${statsHtml}
         </div>
         <div class="entrada-card-footer">
