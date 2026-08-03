@@ -4054,7 +4054,7 @@
       };
     }
 
-    async function fetchTable(table, orderColumn = 'created_at', ascending = true) {
+    async function fetchTable(table, orderColumn = 'created_at', ascending = true, columns = '*') {
       assertSupabase();
       // O Supabase/PostgREST limita cada requisição a 1000 linhas por padrão.
       // Sem paginação, tabelas com mais de 1000 registros (ex: system_logs)
@@ -4065,7 +4065,7 @@
       let allRows = [];
       while (true) {
         const { data, error } = await db.from(table)
-          .select('*')
+          .select(columns)
           .order(orderColumn, { ascending })
           .range(from, from + pageSize - 1);
         if (error) throw error;
@@ -4077,6 +4077,18 @@
       return allRows;
     }
 
+    // Cada tabela busca só as colunas que o app realmente usa (mapXFromDb),
+    // em vez de "select *" — menos dado trafegado, resposta mais rápida.
+    const TABLE_COLUMNS = {
+      produtos: 'id,name,code,kind,emoji,cost,package_cost,tax,qty,min,ads,sync,anunciado,super,created_at,updated_at',
+      movimentacoes: 'id,sku_id,sku_name,type,qty,cost,note,notes,previous_qty,qty_after,previous_cost,average_cost_after,date,created_at',
+      compras: 'id,sku,compra_nome,compra_link,cat_nome,cat_link,qty,preco,total,cartao_id,conta_id,parcelas,venda,margem,roi,date,created_at',
+      cartoes: 'id,nome,digitos,limite,utilizado,created_at,updated_at',
+      lancamentos: 'id,descricao,tipo,valor,data,categoria,cartao_id,created_at',
+      contas: 'id,plataforma,usuario,created_at,updated_at',
+      system_logs: 'id,tabela,acao,registro_id,descricao,dados_anteriores,dados_novos,usuario_id,usuario_role,origem,created_at'
+    };
+
     async function loadAllData() {
       if (!db) {
         const msg = 'Configure SUPABASE_URL e SUPABASE_ANON_KEY no arquivo para carregar os dados do Supabase.';
@@ -4087,34 +4099,40 @@
       }
 
       try {
-        const [produtos, movimentacoes, compras, cartoes, lancamentos] = await Promise.all([
-          fetchTable('produtos', 'created_at', true),
-          fetchTable('movimentacoes', 'date', false),
-          fetchTable('compras', 'date', false),
-          fetchTable('cartoes', 'created_at', true),
-          fetchTable('lancamentos', 'data', false)
+        // Todas as tabelas do carregamento inicial saem em paralelo (inclusive
+        // "contas", que antes era buscada só depois das outras terminarem).
+        // "system_logs" fica de fora daqui de propósito: só é usada na tela
+        // de Logs, que já faz sua própria busca (refreshLogs) ao ser aberta —
+        // buscá-la aqui de novo seria uma requisição inteira desperdiçada
+        // em toda inicialização/F5.
+        const [produtosR, movimentacoesR, comprasR, cartoesR, lancamentosR, contasR] = await Promise.allSettled([
+          fetchTable('produtos', 'created_at', true, TABLE_COLUMNS.produtos),
+          fetchTable('movimentacoes', 'date', false, TABLE_COLUMNS.movimentacoes),
+          fetchTable('compras', 'date', false, TABLE_COLUMNS.compras),
+          fetchTable('cartoes', 'created_at', true, TABLE_COLUMNS.cartoes),
+          fetchTable('lancamentos', 'data', false, TABLE_COLUMNS.lancamentos),
+          fetchTable('contas', 'created_at', true, TABLE_COLUMNS.contas)
         ]);
 
-        appData.skus = produtos.map(mapSkuFromDb);
-        appData.movs = movimentacoes.map(mapMovFromDb);
-        appData.compras = compras.map(mapCompraFromDb);
-        appData.cartoes = cartoes.map(mapCartaoFromDb);
-        appData.financeiro = lancamentos.map(mapLancFromDb);
-
-        try {
-          const contas = await fetchTable('contas', 'created_at', true);
-          appData.contas = contas.map(mapContaFromDb);
-        } catch (contaErr) {
-          console.warn('Tabela de contas ainda não encontrada. Rode a migration_contas.sql no Supabase.', contaErr);
-          appData.contas = [];
+        // Tabelas essenciais: se alguma falhar, propaga o erro como antes.
+        const essenciais = { produtos: produtosR, movimentacoes: movimentacoesR, compras: comprasR, cartoes: cartoesR, lancamentos: lancamentosR };
+        for (const [nome, resultado] of Object.entries(essenciais)) {
+          if (resultado.status === 'rejected') throw resultado.reason;
         }
 
-        try {
-          const logs = await fetchTable('system_logs', 'created_at', false);
-          appData.logs = logs.map(mapLogFromDb);
-        } catch (logErr) {
-          console.warn('Tabela de logs ainda não encontrada ou sem permissão.', logErr);
-          appData.logs = [];
+        appData.skus = produtosR.value.map(mapSkuFromDb);
+        appData.movs = movimentacoesR.value.map(mapMovFromDb);
+        appData.compras = comprasR.value.map(mapCompraFromDb);
+        appData.cartoes = cartoesR.value.map(mapCartaoFromDb);
+        appData.financeiro = lancamentosR.value.map(mapLancFromDb);
+
+        // "contas" é opcional (projeto pode não ter rodado a migration ainda),
+        // então uma falha aqui não deve travar o resto do app.
+        if (contasR.status === 'fulfilled') {
+          appData.contas = contasR.value.map(mapContaFromDb);
+        } else {
+          console.warn('Tabela de contas ainda não encontrada. Rode a migration_contas.sql no Supabase.', contasR.reason);
+          appData.contas = [];
         }
       } catch (err) {
         handleAsyncError(err, 'Não foi possível carregar os dados do Supabase.');
@@ -5740,7 +5758,7 @@
       const silent = Boolean(options.silent);
       try {
         assertSupabase();
-        const logs = await fetchTable('system_logs', 'created_at', false);
+        const logs = await fetchTable('system_logs', 'created_at', false, TABLE_COLUMNS.system_logs);
         appData.logs = logs.map(mapLogFromDb);
         renderLogsFromCache();
       } catch (err) {
