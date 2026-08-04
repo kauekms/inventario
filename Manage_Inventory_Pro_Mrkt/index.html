@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Inventory Pro</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <script>
+    (function () {
+      try {
+        const saved = localStorage.getItem('theme');
+        const theme = saved === 'light' ? 'light' : 'dark';
+        if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      } catch (e) { }
+    })();
+  </script>
+</head>
+
+<body>
+
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-icon">K.B</div>
+      <span>Manage<br>Inventory Pro</span>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-label">Menu</div>
+      <a class="nav-item active" id="nav-dashboard" onclick="navigate('dashboard'); closeSidebar()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke-width="1.8" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" stroke-width="1.8" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" stroke-width="1.8" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" stroke-width="1.8" />
+        </svg>
+        Dashboard
+      </a>
+      <a class="nav-item" id="nav-logs" onclick="navigate('logs'); closeSidebar()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+            d="M9 12h6m-6 4h6M8 4h8a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 012-2z" />
+        </svg>
+        Logs
+      </a>
+
+      <div class="nav-section-label">Operação</div>
+      <a class="nav-item" onclick="toggleSubmenu('produtos-sub')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="1.8" stroke-linecap="round" d="M21 8l-9-5-9 5m18 0v8l-9 5-9-5V8m9 5v8M3 8l9 5" />
+        </svg>
+        Produtos
+        <svg class="nav-expand" id="produtos-expand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </a>
+      <div class="nav-sub" id="produtos-sub" style="display:none">
+        <a class="nav-item" id="nav-estoque" onclick="navigate('estoque'); closeSidebar()">Estoque</a>
+        <a class="nav-item" id="nav-anunciados" onclick="navigate('anunciados'); closeSidebar()">Itens Anunciados</a>
+      </div>
+
+      <a class="nav-item" id="nav-movimentacoes" onclick="navigate('movimentacoes'); closeSidebar()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+            d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+        Movimentações
+      </a>
+
+      <a class="nav-item" id="nav-compras" onclick="toggleSubmenu('compras-sub')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+        Compras
+        <svg class="nav-expand" id="compras-expand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </a>
+      <div class="nav-sub" id="compras-sub" style="display:none">
+        <a class="nav-item" id="nav-compras-registro"
+          onclick="navigate('compras'); switchSubpage('compras'); closeSidebar()">Registro de Compras</a>
+        <a class="nav-item" id="nav-financeiro"
+          onclick="navigate('compras'); switchSubpage('financeiro'); closeSidebar()">Financeiro</a>
+        <a class="nav-item" id="nav-contas" onclick="navigate('contas'); closeSidebar()">Contas de Compra</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Menu">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <div class="breadcrumb" id="breadcrumb">
+        <span>Dashboard</span><span class="sep">›</span><span class="current">Início</span>
+      </div>
+      <div class="topbar-right">
+        <div class="app-status"><span class="app-status-dot"></span><span>Supabase</span></div>
+        <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Alternar tema"
+          title="Alternar tema claro/escuro">
+          <svg id="theme-icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+          <svg id="theme-icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none">
+            <circle cx="12" cy="12" r="4" stroke-width="2" />
+            <path stroke-linecap="round" stroke-width="2"
+              d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+          </svg>
+        </button>
+        <div class="avatar">K.B</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <div id="page-dashboard" class="active">
+        <section class="dashboard-hero">
+          <div class="hero-copy">
+            <span class="eyebrow">Centro de controle</span>
+            <h1>Painel executivo de estoque</h1>
+            <p><span id="dash-date">Hoje</span> · Acompanhe SKUs, capital parado, produtos críticos e movimentações
+              recentes em tempo real.</p>
+          </div>
+          <div class="hero-actions">
+            <button class="btn btn-primary" onclick="openCadastroProdutoModal()">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Cadastrar Produto
+            </button>
+            <button class="btn btn-ghost" onclick="navigate('compras'); switchSubpage('compras')">Nova Compra</button>
+            <button class="btn btn-ghost" onclick="navigate('logs')">Ver Auditoria</button>
+          </div>
+        </section>
+
+        <div class="dash-kpi premium-kpi">
+          <div class="kpi-card success">
+            <div class="kpi-label">Total de SKUs</div>
+            <div class="kpi-value" id="dash-skus">0</div>
+            <div class="kpi-sub">produtos cadastrados</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Unidades em Estoque</div>
+            <div class="kpi-value" id="dash-units">0</div>
+            <div class="kpi-sub">unidades totais</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Valor de Custo Total</div>
+            <div class="kpi-value" id="dash-cost">R$ 0,00</div>
+            <div class="kpi-sub">capital em estoque</div>
+          </div>
+          <div class="kpi-card critical">
+            <div class="kpi-label">Estoque Zerado</div>
+            <div class="kpi-value" id="dash-zero">0</div>
+            <div class="kpi-sub">produtos sem saldo</div>
+          </div>
+          <div class="kpi-card warning">
+            <div class="kpi-label">Estoque Baixo</div>
+            <div class="kpi-value" id="dash-low">0</div>
+            <div class="kpi-sub">abaixo do mínimo</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Saídas no mês</div>
+            <div class="kpi-value" id="dash-month-out">0</div>
+            <div class="kpi-sub">unidades movimentadas</div>
+          </div>
+        </div>
+
+        <div class="panel-card" style="margin-bottom: 22px; padding: 18px 22px;">
+          <div class="panel-title" style="margin-bottom: 16px;">
+            <h2>Entradas vs Saídas</h2>
+            <p>Visão de movimentações dos últimos 7 dias</p>
+          </div>
+          <div style="height: 250px; position: relative;"><canvas id="dashboardChart"></canvas></div>
+        </div>
+        <div class="dashboard-grid">
+          <section class="panel-card">
+            <div class="panel-title">
+              <div>
+                <h2>Ações rápidas</h2>
+                <p>Atalhos para operação diária.</p>
+              </div>
+            </div>
+            <div class="quick-grid">
+              <button class="quick-action" onclick="openCadastroProdutoModal()"><strong>Novo produto</strong><span>Crie
+                  um SKU em poucos segundos.</span></button>
+              <button class="quick-action" onclick="navigate('estoque')"><strong>Ver estoque</strong><span>Filtre
+                  produtos zerados ou baixos.</span></button>
+              <button class="quick-action" onclick="navigate('compras'); switchSubpage('compras')"><strong>Nova
+                  compra</strong><span>Registre custo, ROI e pagamento.</span></button>
+              <button class="quick-action" onclick="navigate('logs')"><strong>Auditoria</strong><span>Confira tudo que
+                  mudou no sistema.</span></button>
+              <button class="quick-action"
+                onclick="navigate('compras'); switchSubpage('financeiro')"><strong>Cartões</strong><span>Veja aqui as
+                  faturas.</span></button>
+            </div>
+          </section>
+
+          <section class="panel-card">
+            <div class="panel-title">
+              <div>
+                <h2>Produtos em atenção</h2>
+                <p>Itens zerados ou próximos do mínimo.</p>
+              </div>
+              <button class="btn btn-ghost" style="font-size:12px;padding:6px 10px" onclick="navigate('estoque')">Ver
+                todos</button>
+            </div>
+            <div class="attention-list" id="dash-attention">
+              <div class="empty-state" style="padding:22px 10px">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 16px; opacity: 0.3; display:block; color: var(--text-muted);"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                <p>Nenhum produto crítico.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="recent-title">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Movimentações Recentes
+        </div>
+        <div id="dash-movs">
+          <div class="empty-state">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 16px; opacity: 0.3; display:block; color: var(--text-muted);"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            <p>Nenhuma movimentação ainda.</p>
+          </div>
+        </div>
+      </div>
+
+
+      <div id="page-logs">
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Logs do Sistema</h1>
+            <p>Auditoria completa de cadastros, edições, exclusões e movimentações.</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-ghost" onclick="refreshLogs()">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-width="2"
+                  d="M4 4v6h6M20 20v-6h-6M20 9A8 8 0 006.35 4.35M4 15a8 8 0 0013.65 4.65" />
+              </svg>
+              Atualizar
+            </button>
+          </div>
+        </div>
+
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+          <div class="kpi-card">
+            <div class="kpi-label">Total de Logs</div>
+            <div class="kpi-value" id="logs-total">0</div>
+            <div class="kpi-sub">ações registradas</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Cadastros</div>
+            <div class="kpi-value" id="logs-inserts">0</div>
+            <div class="kpi-sub">novos registros</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Atualizações</div>
+            <div class="kpi-value" id="logs-updates">0</div>
+            <div class="kpi-sub">alterações feitas</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Exclusões</div>
+            <div class="kpi-value" id="logs-deletes">0</div>
+            <div class="kpi-sub">registros removidos</div>
+          </div>
+        </div>
+
+        <div class="toolbar audit-toolbar">
+          <div class="search-box">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-width="1.8"
+                d="M21 21l-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input id="log-search" placeholder="Buscar por descrição, tabela ou ID..." oninput="renderLogsFromCache()">
+          </div>
+          <select class="select-filter" id="log-action-filter" onchange="renderLogsFromCache()">
+            <option value="todos">Todas as ações</option>
+            <option value="INSERT">Cadastros</option>
+            <option value="UPDATE">Edições</option>
+            <option value="DELETE">Exclusões</option>
+          </select>
+          <select class="select-filter" id="log-table-filter" onchange="renderLogsFromCache()">
+            <option value="todos">Todas as tabelas</option>
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-head-logs">
+            <div>Data/Hora</div>
+            <div>Ação</div>
+            <div>Tabela</div>
+            <div>Descrição</div>
+            <div>Registro</div>
+          </div>
+          <div id="logs-table-body">
+            <div class="empty-state">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 16px; opacity: 0.3; display:block; color: var(--text-muted);"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+              <p>Nenhum log encontrado.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-compras">
+        <div class="page-header">
+          <div class="page-title">
+            <h1 id="compras-page-title">Registro de Compras</h1>
+            <p id="compras-page-sub">Gerencie suas compras e calcule margens e ROI.</p>
+          </div>
+          <div class="page-actions" id="compras-page-actions">
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="openCompraModal()">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Nova Compra
+            </button>
+          </div>
+        </div>
+
+        <div class="sub-tabs">
+          <button class="sub-tab active" id="subtab-compras" onclick="switchSubpage('compras')">Compras</button>
+          <button class="sub-tab" id="subtab-financeiro" onclick="switchSubpage('financeiro')">Financeiro</button>
+        </div>
+
+        <div id="subpage-compras" class="active">
+          <div class="toolbar" style="margin-bottom:16px">
+            <div class="search-box">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" stroke-width="1.8" />
+                <path stroke-linecap="round" stroke-width="1.8" d="M21 21l-4.35-4.35" />
+              </svg>
+              <input type="text" id="compras-search" placeholder="Buscar por SKU, nome ou pagamento..."
+                oninput="renderCompras()">
+            </div>
+          </div>
+          <div class="table-wrap">
+            <div class="table-head-compras">
+              <div>SKU</div>
+              <div>Compra</div>
+              <div>Catálogo</div>
+              <div>Qtd</div>
+              <div>Preço Und</div>
+              <div>Valor Total</div>
+              <div>Pagamento</div>
+              <div>Conta</div>
+              <div>P. Venda</div>
+              <div>Margem</div>
+              <div>ROI</div>
+              <div>Ações</div>
+            </div>
+            <div id="compras-table-body"></div>
+          </div>
+        </div>
+
+        <div id="subpage-financeiro">
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div class="fin-section-title">
+              <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="1" y="4" width="22" height="16" rx="2" stroke-width="1.8" />
+                <path stroke-linecap="round" stroke-width="1.8" d="M1 10h22" />
+              </svg>
+              Cartões de Crédito
+            </div>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="openCartaoModal()">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Adicionar Cartão
+            </button>
+          </div>
+
+          <div class="cards-grid" id="cartoes-grid">
+            <div class="empty-state" style="padding:30px 20px;grid-column:1/-1">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 16px; opacity: 0.3; display:block; color: var(--text-muted);"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+              <p>Nenhum cartão cadastrado.</p>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div class="fin-section-title">
+              <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-width="1.8"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Lançamentos (Fluxo de Caixa)
+            </div>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="openFinanceiroModal()">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Novo Lançamento
+            </button>
+          </div>
+
+          <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+            <div class="kpi-card success">
+              <div class="kpi-label">Total Receitas</div>
+              <div class="kpi-value" id="fin-receitas" style="color:var(--green)">R$ 0,00</div>
+              <div class="kpi-sub">entradas totais</div>
+            </div>
+            <div class="kpi-card critical">
+              <div class="kpi-label">Total Despesas</div>
+              <div class="kpi-value" id="fin-despesas" style="color:var(--danger)">R$ 0,00</div>
+              <div class="kpi-sub">somente caixa/dinheiro + faturas pagas</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Saldo em Caixa</div>
+              <div class="kpi-value" id="fin-caixa">R$ 0,00</div>
+              <div class="kpi-sub">receitas − saídas de caixa</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Compras Registradas</div>
+              <div class="kpi-value" id="fin-total-compras">0</div>
+              <div class="kpi-sub" id="fin-total-compras-sub">R$ 0,00 em pedidos</div>
+            </div>
+          </div>
+
+          <div class="panel-card" style="margin-bottom: 22px; padding: 18px 22px;">
+            <div class="panel-title" style="margin-bottom: 16px;">
+              <h2>Evolução do Caixa</h2>
+              <p>Saldo nos últimos 15 dias</p>
+            </div>
+            <div style="height: 250px; position: relative;"><canvas id="financeiroChart"></canvas></div>
+          </div>
+          <div class="table-wrap">
+            <div class="table-head-financeiro">
+              <div>Descrição</div>
+              <div>Data</div>
+              <div>Tipo</div>
+              <div>Categoria</div>
+              <div>Valor</div>
+              <div>Pagamento</div>
+              <div>Ações</div>
+            </div>
+            <div id="financeiro-table-body"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-contas">
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Contas de Compra</h1>
+            <p>Cadastre as contas usadas para comprar (Amazon, Mercado Livre etc.) e veja as compras vinculadas a cada
+              uma.</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openContaModal()">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Adicionar Conta
+            </button>
+          </div>
+        </div>
+
+        <div class="toolbar" style="margin-bottom:16px">
+          <div class="search-box">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8" stroke-width="1.8" />
+              <path stroke-linecap="round" stroke-width="1.8" d="M21 21l-4.35-4.35" />
+            </svg>
+            <input type="text" id="contas-search" placeholder="Buscar por plataforma ou usuário..."
+              oninput="renderContas()">
+          </div>
+        </div>
+
+        <div class="cards-grid" id="contas-grid">
+          <div class="empty-state" style="padding:30px 20px;grid-column:1/-1">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 16px; opacity: 0.3; display:block; color: var(--text-muted);"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            <p>Nenhuma conta cadastrada.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-estoque">
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Estoque</h1>
+            <p>Gerencie seus SKUs e controle de estoque</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openCadastroProdutoModal()">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Cadastrar Produto
+            </button>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Unidades em Estoque</div>
+            <div class="kpi-value" id="kpi-units">0</div>
+            <div class="kpi-sub" id="kpi-skus-sub">Total de 0 SKUs</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Custo Total em Estoque</div>
+            <div class="kpi-value" id="kpi-cost">R$ 0,00</div>
+            <div class="kpi-sub">Investimento em estoque</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">SKUs com Estoque Zero</div>
+            <div class="kpi-value" id="kpi-zero" style="color:var(--danger)">0</div>
+            <div class="kpi-sub">produtos sem estoque</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Entradas (mês)</div>
+            <div class="kpi-value" id="kpi-in" style="color:var(--green)">0</div>
+            <div class="kpi-sub">unidades adicionadas</div>
+          </div>
+        </div>
+
+        <div id="zero-alert" style="display:none" class="alert">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="1.8"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <div>
+            <strong>SKUs com Estoque Zero Encontrados</strong>
+            <span id="zero-alert-msg">Você tem produtos sem estoque.</span>
+          </div>
+        </div>
+
+        <div class="toolbar" style="flex-wrap: nowrap; gap: 8px;">
+          <div class="search-box" style="flex: 1; min-width: 150px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8" stroke-width="1.8" />
+              <path stroke-linecap="round" stroke-width="1.8" d="M21 21l-4.35-4.35" />
+            </svg>
+            <input type="text" id="search-input" placeholder="Buscar..." oninput="renderTable()">
+          </div>
+          <div style="display: flex; gap: 8px; flex-shrink: 0;">
+            <input type="number" id="filter-qty" placeholder="Qtd ≥" class="form-input"
+              style="width: 76px; padding: 8px 8px; font-size: 13px; margin: 0; border-radius: 8px; border: 1px solid var(--border); background: var(--surface);"
+              oninput="renderTable()" min="0">
+            <div class="custom-select-wrap sm" id="cs-filter-super" style="width: 130px;">
+              <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-filter-super')">
+                <span class="custom-select-trigger-text" id="cs-filter-super-label">Ambos</span>
+              </div>
+              <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+              </svg>
+              <div class="custom-select-dropdown">
+                <div class="custom-select-option selected" data-value="ambos"
+                  onclick="pickCustomSelect('cs-filter-super','ambos','Ambos',this); renderTable()"><span
+                    class="opt-check"></span>Ambos</div>
+                <div class="custom-select-option" data-value="super"
+                  onclick="pickCustomSelect('cs-filter-super','super','Super',this); renderTable()"><span
+                    class="opt-check"></span>Somente Super</div>
+                <div class="custom-select-option" data-value="normal"
+                  onclick="pickCustomSelect('cs-filter-super','normal','Normal',this); renderTable()"><span
+                    class="opt-check"></span>Somente Normal</div>
+              </div>
+            </div>
+            <select id="filter-super" style="display:none">
+              <option value="ambos" selected>Ambos</option>
+              <option value="super">Super</option>
+              <option value="normal">Normal</option>
+            </select>
+            <div class="custom-select-wrap sm" id="cs-filter-anunciado" style="width: 130px;">
+              <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-filter-anunciado')">
+                <span class="custom-select-trigger-text" id="cs-filter-anunciado-label">Todos</span>
+              </div>
+              <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+              </svg>
+              <div class="custom-select-dropdown">
+                <div class="custom-select-option selected" data-value="todos"
+                  onclick="pickCustomSelect('cs-filter-anunciado','todos','Todos',this); renderTable()"><span
+                    class="opt-check"></span>Todos</div>
+                <div class="custom-select-option" data-value="anunciado"
+                  onclick="pickCustomSelect('cs-filter-anunciado','anunciado','Anunciados',this); renderTable()"><span
+                    class="opt-check"></span>Anunciados</div>
+                <div class="custom-select-option" data-value="nao"
+                  onclick="pickCustomSelect('cs-filter-anunciado','nao','Não Anunc.',this); renderTable()"><span
+                    class="opt-check"></span>Não Anunciados</div>
+              </div>
+            </div>
+            <select id="filter-anunciado" style="display:none">
+              <option value="todos" selected>Todos</option>
+              <option value="anunciado">Anunciados</option>
+              <option value="nao">Não Anunciados</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-head">
+            <div></div>
+            <div>Produto</div>
+            <div>Estoque</div>
+            <div>Custo Médio</div>
+            <div>Total em Estoque</div>
+            <div>Últ. Movimentação</div>
+            <div>Ações</div>
+          </div>
+          <div id="table-body"></div>
+        </div>
+      </div>
+
+      <div id="page-anunciados">
+        <button class="back-link" onclick="navigate('estoque')">‹ Voltar</button>
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Itens Anunciados</h1>
+            <p>Produtos marcados como anunciados, com o custo médio cadastrado</p>
+          </div>
+        </div>
+        <div class="entradas-grid" id="anunciados-grid"></div>
+      </div>
+
+      <div id="page-movimentacoes">
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Movimentações</h1>
+            <p id="movs-subtitle">A movimentação de entrada mais recente registrada em cada produto</p>
+          </div>
+        </div>
+
+        <div class="detail-tabs" style="margin-bottom:20px">
+          <button class="detail-tab active" id="tab-mov-entrada" onclick="selectMovTab('entrada')">Entradas</button>
+          <button class="detail-tab" id="tab-mov-saida" onclick="selectMovTab('saida')">Saídas</button>
+        </div>
+
+        <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+          <div class="kpi-card">
+            <div class="kpi-label" id="movs-kpi-produtos-label">Produtos com Entrada</div>
+            <div class="kpi-value" id="movs-kpi-produtos">0</div>
+            <div class="kpi-sub" id="movs-kpi-produtos-sub">com ao menos 1 entrada registrada</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label" id="movs-kpi-recentes-label">Entradas nos últimos 7 dias</div>
+            <div class="kpi-value" id="movs-kpi-recentes" style="color:var(--green)">0</div>
+            <div class="kpi-sub">movimentações no período</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label" id="movs-kpi-unidades-label">Unidades recebidas (7 dias)</div>
+            <div class="kpi-value" id="movs-kpi-unidades">0</div>
+            <div class="kpi-sub" id="movs-kpi-unidades-sub">unidades entraram no estoque</div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8" stroke-width="1.8" />
+              <path stroke-linecap="round" stroke-width="1.8" d="M21 21l-4.35-4.35" />
+            </svg>
+            <input type="text" id="movs-search" placeholder="Buscar por código ou nome..."
+              oninput="renderMovimentacoes()">
+          </div>
+          <div class="custom-select-wrap sm" id="cs-filter-mes-mov">
+            <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-filter-mes-mov')">
+              <span class="custom-select-trigger-text" id="cs-filter-mes-mov-label">Todos os meses</span>
+            </div>
+            <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+            </svg>
+            <div class="custom-select-dropdown" id="cs-filter-mes-mov-dropdown"></div>
+          </div>
+          <select id="filter-mes-mov" style="display:none" onchange="renderMovimentacoes()">
+            <option value="todos">Todos os meses</option>
+          </select>
+          <div class="custom-select-wrap sm" id="cs-filter-ano-mov">
+            <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-filter-ano-mov')">
+              <span class="custom-select-trigger-text" id="cs-filter-ano-mov-label">Todos os anos</span>
+            </div>
+            <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+            </svg>
+            <div class="custom-select-dropdown" id="cs-filter-ano-mov-dropdown"></div>
+          </div>
+          <select id="filter-ano-mov" style="display:none" onchange="renderMovimentacoes()">
+            <option value="todos">Todos os anos</option>
+          </select>
+        </div>
+
+        <div class="entradas-grid" id="movs-grid"></div>
+      </div>
+
+      <div id="page-produto-detalhe">
+        <button class="back-link" onclick="navigate('estoque')">‹ Voltar</button>
+
+        <div class="product-detail-top">
+          <div class="product-detail-main">
+            <div class="detail-product-img" id="detail-emoji">📦</div>
+            <div class="detail-title">
+              <h1 id="detail-name">Produto</h1>
+              <div class="detail-meta">
+                <span>SKU: <strong id="detail-sku">—</strong></span>
+                <span>•</span>
+                <span>Criado em <strong id="detail-created">—</strong></span>
+                <span class="detail-pill" id="detail-kind">Unitário</span>
+              </div>
+              <div class="detail-badges">
+                <span class="detail-pill" id="detail-qty-pill">0 unidades</span>
+                <span class="detail-pill" id="detail-stock-value-pill">R$ 0,00 em estoque</span>
+                <span class="detail-pill" id="detail-anunciado-pill" style="display:none">Anunciado</span>
+              </div>
+            </div>
+          </div>
+          <div class="detail-actions">
+            <button type="button" class="btn btn-ghost" onclick="openEditProductModal()">Editar cadastro</button>
+            <button type="button" class="btn btn-ghost" onclick="openRedefinirCustoModal()" style="border-color:var(--accent);color:var(--accent)">Redefinir Custo Médio</button>
+            <button type="button" class="btn btn-danger" onclick="openDeleteProductModal()">Excluir</button>
+          </div>
+        </div>
+
+        <div class="detail-cards" style="grid-template-columns: repeat(2, 1fr); max-width: 540px;">
+          <div class="detail-card">
+            <div class="detail-card-label"><span>Custo Médio ⓘ</span><span>$</span></div>
+            <div class="detail-card-value" id="detail-average-cost">R$ 0,00</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-label"><span>Custo Médio (Entradas) ⓘ</span><span>$</span></div>
+            <div class="detail-card-value" id="detail-avg-purchase-cost">R$ 0,00</div>
+            <div class="entrada-card-sku" id="detail-avg-purchase-sub" style="margin-top:6px">Sem entradas registradas
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-tabs">
+          <button class="detail-tab active" id="tab-movs" onclick="selectDetailTab('movs')">Movimentações</button>
+          <button class="detail-tab" id="tab-costs" onclick="selectDetailTab('costs')">Histórico de Custos</button>
+        </div>
+
+        <section id="detail-movs-tab">
+          <div class="detail-section-head">
+            <div>
+              <h2>Histórico de Movimentações</h2>
+              <p>Todas as entradas e saídas de estoque</p>
+            </div>
+            <button class="btn btn-primary" onclick="openDetailMovModal()">+ Adicionar movimentação</button>
+          </div>
+          <div class="filter-row">
+            <span>Filtrar:</span>
+            <button class="filter-pill active" id="filter-todos" onclick="setDetailMovFilter('todos')">Todos
+              (0)</button>
+            <button class="filter-pill in" id="filter-entrada" onclick="setDetailMovFilter('entrada')">Entradas
+              (0)</button>
+            <button class="filter-pill out" id="filter-saida" onclick="setDetailMovFilter('saida')">Saídas (0)</button>
+          </div>
+          <div class="movement-box" id="detail-movements-box">Nenhuma movimentação registrada</div>
+        </section>
+
+        <section id="detail-costs-tab" class="hidden">
+          <div class="detail-section-head">
+            <div>
+              <h2>Histórico de Custos</h2>
+              <p>Entradas que alteraram ou confirmaram o custo médio do produto</p>
+            </div>
+          </div>
+          <div class="movement-box" id="detail-costs-box">Nenhum histórico de custo registrado</div>
+        </section>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="modal-cadastro-produto">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Cadastrar Produto</h2>
+          <p>Após salvar, o produto estará disponível no estoque.</p>
+        </div>
+        <div class="close-btn" onclick="closeModal('cadastro-produto')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input class="form-input" id="cad-name" placeholder="Ex: Produto 01" type="text">
+      </div>
+      <div class="form-group">
+        <label class="form-label">SKU</label>
+        <input class="form-input" id="cad-sku" placeholder="Ex: PROD-001" type="text">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo do produto</label>
+        <div class="checkbox-grid">
+          <label class="check-card selected" id="card-unitario" onclick="selectProductKind('unitario')">
+            <input type="checkbox" id="cad-unitario" checked>
+            <div><strong>Unitário</strong><span>Produto vendido como uma única unidade.</span></div>
+          </label>
+          <label class="check-card" id="card-kit" onclick="selectProductKind('kit')">
+            <input type="checkbox" id="cad-kit">
+            <div><strong>KIT</strong><span>Produto composto por mais de um item vinculado ao mesmo SKU.</span></div>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer" style="margin-top:22px">
+        <button class="btn btn-ghost" onclick="clearCadastroForm()">Limpar</button>
+        <button class="btn btn-primary" onclick="saveCadastroProduto()">Cadastrar Produto</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-compra">
+    <div class="modal" style="width: 600px;">
+      <div class="modal-header">
+        <div>
+          <h2 id="modal-compra-title">Nova Compra</h2>
+          <p>Preencha os dados para registrar sua compra</p>
+        </div>
+        <div class="close-btn" onclick="closeModal('compra')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">SKU do Produto</label>
+        <div class="custom-select-wrap" id="cs-compra-sku">
+          <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-compra-sku')">
+            <span class="custom-select-trigger-text" id="cs-compra-sku-label">Selecione um SKU cadastrado...</span>
+          </div>
+          <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+          </svg>
+          <div class="custom-select-dropdown" id="cs-compra-sku-dropdown"></div>
+        </div>
+        <select id="compra-sku-select" style="display:none"></select>
+        <div id="compra-sku-manual-wrap" style="display:none; margin-top:8px;">
+          <input class="form-input" id="compra-sku" placeholder="Digite o novo SKU manualmente..." type="text">
+          <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">⚠️ SKU não encontrado nos cadastros. Será
+            registrado como novo.</div>
+        </div>
+        <input type="hidden" id="compra-sku-hidden">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Compra (Nome a exibir)</label>
+          <input class="form-input" id="compra-nome" placeholder="Ex: Fornecedor X" type="text">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Compra (Link URL)</label>
+          <input class="form-input" id="compra-link" placeholder="https://..." type="url">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Catálogo (Nome a exibir)</label>
+          <input class="form-input" id="cat-nome" placeholder="Ex: Link Catálogo" type="text">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catálogo (Link URL)</label>
+          <input class="form-input" id="cat-link" placeholder="https://..." type="url">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Quantidade</label>
+          <input class="form-input" id="compra-qty" placeholder="0" type="number" min="1"
+            oninput="calcCompraUnitPrice()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Preço de Custo por Und (Automático)</label>
+          <div class="form-prefix">
+            <span>R$</span>
+            <input id="compra-preco" placeholder="0,00" type="text" inputmode="numeric" readonly
+              style="opacity:.75; cursor:not-allowed;">
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Forma de Pagamento</label>
+          <div class="custom-select-wrap" id="cs-compra-cartao">
+            <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-compra-cartao')">
+              <span class="custom-select-trigger-text" id="cs-compra-cartao-label">Caixa / Dinheiro</span>
+            </div>
+            <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+            </svg>
+            <div class="custom-select-dropdown" id="cs-compra-cartao-dropdown">
+              <div class="custom-select-option selected" data-value=""
+                onclick="pickCustomSelect('cs-compra-cartao','','Caixa / Dinheiro',this)"><span
+                  class="opt-check"></span>Caixa / Dinheiro</div>
+            </div>
+          </div>
+          <select id="compra-cartao" style="display:none">
+            <option value="">Caixa / Dinheiro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Parcelas</label>
+          <input class="form-input" id="compra-parcelas" placeholder="Ex: 3" type="number" min="1" value="1">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Conta de Compra</label>
+        <div class="custom-select-wrap" id="cs-compra-conta">
+          <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-compra-conta')">
+            <span class="custom-select-trigger-text" id="cs-compra-conta-label">Nenhuma conta selecionada</span>
+          </div>
+          <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+          </svg>
+          <div class="custom-select-dropdown" id="cs-compra-conta-dropdown">
+            <div class="custom-select-option selected" data-value=""
+              onclick="pickCustomSelect('cs-compra-conta','','Nenhuma conta selecionada',this)"><span
+                class="opt-check"></span>Nenhuma conta selecionada</div>
+          </div>
+        </div>
+        <select id="compra-conta" style="display:none">
+          <option value="">Nenhuma conta selecionada</option>
+        </select>
+        <div class="cell-muted" style="margin-top:6px;font-size:12px">Indique em qual conta (Amazon, Mercado Livre etc.)
+          esta compra foi realizada. <a class="link-styled" style="cursor:pointer"
+            onclick="navigate('compras'); switchSubpage('financeiro'); closeModal('compra')">Cadastrar nova conta</a>
+        </div>
+      </div>
+      <div class="form-group"
+        style="background: var(--surface2); padding: 14px 16px; border-radius: 8px; border: 1px solid var(--border);">
+        <label class="form-label">Valor Total da Compra</label>
+        <div class="form-prefix">
+          <span>R$</span>
+          <input id="compra-total" placeholder="0,00" type="text" inputmode="numeric"
+            oninput="formatMoneyField(this); calcCompraUnitPrice()">
+        </div>
+        <div class="cell-muted" style="margin-top:8px;font-size:12px">O preço unitário será calculado automaticamente:
+          valor total ÷ quantidade.</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Preço de Venda</label>
+          <div class="form-prefix">
+            <span>R$</span>
+            <input id="compra-venda" placeholder="0,00" type="text" inputmode="numeric"
+              oninput="formatMoneyField(this)">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Margem</label>
+          <input class="form-input" id="compra-margem" placeholder="Ex: 30% ou R$ 5,00" type="text">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ROI</label>
+        <input class="form-input" id="compra-roi" placeholder="Ex: 150%" type="text">
+      </div>
+      <div class="modal-footer" style="margin-top: 10px;">
+        <button class="btn btn-ghost" onclick="closeModal('compra')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-compra" onclick="saveCompra()">Registrar Compra</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-financeiro">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Novo Lançamento</h2>
+          <p>Registre movimentações do seu caixa</p>
+        </div>
+        <div class="close-btn" onclick="closeModal('financeiro')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <div class="detail-type-selector">
+          <div class="detail-type-card selected" id="fin-type-receita" onclick="selectFinType('receita')">
+            <span class="radio-dot"></span>
+            <div style="font-weight:700">💰 Receita</div>
+          </div>
+          <div class="detail-type-card" id="fin-type-despesa" onclick="selectFinType('despesa')">
+            <span class="radio-dot"></span>
+            <div style="font-weight:700">💸 Despesa</div>
+          </div>
+          <div class="detail-type-card" id="fin-type-fatura" onclick="selectFinType('fatura')">
+            <span class="radio-dot"></span>
+            <div style="font-weight:700">💳 Fatura</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <input class="form-input" id="fin-descricao" placeholder="Ex: Venda de produtos" type="text">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Valor</label>
+          <div class="form-prefix">
+            <span>R$</span>
+            <input id="fin-valor" placeholder="0,00" type="text" inputmode="numeric" oninput="formatMoneyField(this)">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data</label>
+          <input class="form-input" id="fin-data" type="date">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Categoria</label>
+          <input class="form-input" id="fin-categoria" placeholder="Ex: Fornecedor, Internet..." type="text">
+        </div>
+        <div class="form-group" id="fin-pagamento-wrap" style="display: none;">
+          <label class="form-label" id="fin-pagamento-label">Forma de Pagamento</label>
+          <div class="custom-select-wrap" id="cs-fin-cartao">
+            <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-fin-cartao')">
+              <span class="custom-select-trigger-text" id="cs-fin-cartao-label">Caixa / Dinheiro</span>
+            </div>
+            <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+            </svg>
+            <div class="custom-select-dropdown" id="cs-fin-cartao-dropdown">
+              <div class="custom-select-option selected" data-value=""
+                onclick="pickCustomSelect('cs-fin-cartao','','Caixa / Dinheiro',this)"><span
+                  class="opt-check"></span>Caixa / Dinheiro</div>
+            </div>
+          </div>
+          <select id="fin-cartao" style="display:none"></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('financeiro')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveFinanceiro()">Salvar Lançamento</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-faturas">
+    <div class="modal" style="width: 500px;">
+      <div class="modal-header">
+        <div>
+          <h2 id="faturas-cartao-nome">Faturas do Cartão</h2>
+          <p>Previsão de parcelas e faturas mensais.</p>
+        </div>
+        <div class="close-btn" onclick="closeModal('faturas')"><svg fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg></div>
+      </div>
+      <div id="faturas-list"
+        style="max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-cartao">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="modal-cartao-title">Adicionar Cartão</h2>
+          <p>Cadastre ou edite um cartão de crédito.</p>
+        </div>
+        <div class="close-btn" onclick="closeModal('cartao')"><svg fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Apelido do Cartão</label><input class="form-input"
+            id="cartao-nome" placeholder="Ex: Nubank, Inter..." type="text"></div>
+        <div class="form-group"><label class="form-label">Últimos 4 dígitos</label><input class="form-input"
+            id="cartao-digitos" placeholder="0000" type="text" maxlength="4" inputmode="numeric"
+            oninput="this.value=this.value.replace(/\D/g,'')"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Limite Total</label>
+        <div class="form-prefix"><span>R$</span><input id="cartao-limite" placeholder="0,00" type="text"
+            inputmode="numeric" oninput="formatMoneyField(this)"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('cartao')">Cancelar</button><button
+          class="btn btn-primary" id="btn-save-cartao" onclick="saveCartao()">Salvar Cartão</button></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-conta">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="modal-conta-title">Adicionar Conta</h2>
+          <p>Cadastre uma conta usada para realizar compras (Amazon, Mercado Livre, etc).</p>
+        </div>
+        <div class="close-btn" onclick="closeModal('conta')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg></div>
+      </div>
+      <div class="form-group"><label class="form-label">Plataforma / Loja</label><input class="form-input"
+          id="conta-plataforma" placeholder="Ex: Amazon, Mercado Livre..." type="text"></div>
+      <div class="form-group"><label class="form-label">Usuário (nome na conta)</label><input class="form-input"
+          id="conta-usuario" placeholder="Ex: joao.silva" type="text"></div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('conta')">Cancelar</button><button
+          class="btn btn-primary" id="btn-save-conta" onclick="saveConta()">Salvar Conta</button></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-conta-compras">
+    <div class="modal" style="width: 640px;">
+      <div class="modal-header">
+        <div>
+          <h2 id="conta-compras-nome">Compras da Conta</h2>
+          <p>Compras registradas nesta conta.</p>
+        </div>
+        <div class="close-btn" onclick="closeModal('conta-compras')"><svg fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg></div>
+      </div>
+      <div id="conta-compras-list"
+        style="max-height: 440px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-edit-product">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Editar Cadastro do Produto</h2>
+        </div>
+        <div class="close-btn" onclick="closeEditProductModal()"><svg fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg></div>
+      </div>
+      <div class="form-group"><label class="form-label">Nome</label><input class="form-input" id="edit-prod-name"
+          type="text"></div>
+      <div class="form-group"><label class="form-label">SKU</label><input class="form-input" id="edit-prod-sku"
+          type="text"></div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <div class="checkbox-grid">
+          <label class="check-card" id="edit-card-unitario" onclick="selectEditProductKind('unitario')"><input
+              type="checkbox" id="edit-prod-unitario">
+            <div><strong>Unitário</strong></div>
+          </label>
+          <label class="check-card" id="edit-card-kit" onclick="selectEditProductKind('kit')"><input type="checkbox"
+              id="edit-prod-kit">
+            <div><strong>KIT</strong></div>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeEditProductModal()">Cancelar</button><button
+          class="btn btn-primary" onclick="saveEditedProduct()">Salvar Alterações</button></div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="modal-delete-product">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Excluir Cadastro</h2>
+          <p>Confirme abaixo antes de apagar este produto.</p>
+        </div>
+        <div class="close-btn" onclick="closeDeleteProductModal()"><svg fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg></div>
+      </div>
+      <div class="delete-warning-box">
+        <strong>Atenção: esta ação não poderá ser desfeita.</strong>
+        O produto e todas as movimentações vinculadas a ele serão removidos.
+      </div>
+      <div class="delete-product-preview">
+        <strong id="delete-product-name">Produto</strong>
+        <span>SKU: <span id="delete-product-sku">—</span></span>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeDeleteProductModal()">Não, cancelar</button>
+        <button class="btn btn-danger" onclick="confirmDeleteProduct()">Sim, excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-redefinir-custo">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Redefinir Custo Médio</h2>
+          <p>Informe o novo custo médio e a quantidade atual do produto.</p>
+        </div>
+        <div class="close-btn" onclick="closeRedefinirCustoModal()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Novo Custo Médio (R$)</label>
+        <input class="form-input" id="redefinir-custo-valor" placeholder="Ex: 25,50" type="text" inputmode="decimal">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Quantidade Atual</label>
+        <input class="form-input" id="redefinir-custo-qty" placeholder="Ex: 10" type="number" min="0">
+      </div>
+      <div class="modal-footer" style="margin-top:22px">
+        <button class="btn btn-ghost" onclick="closeRedefinirCustoModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-redefinir-custo" onclick="saveRedefinirCusto()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-prod-mov">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Movimentação de Estoque</h2>
+        </div>
+        <div class="close-btn" onclick="closeProductMovModal()"><svg fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg></div>
+      </div>
+      <div class="form-group">
+        <div class="detail-type-selector">
+          <div class="detail-type-card selected" id="prod-type-entrada" onclick="selectDetailMovType('entrada')"><span
+              class="radio-dot"></span>
+            <div style="font-weight:700">📦 Entrada</div>
+          </div>
+          <div class="detail-type-card" id="prod-type-saida" onclick="selectDetailMovType('saida')"><span
+              class="radio-dot"></span>
+            <div style="font-weight:700">🚚 Saída</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Quantidade</label><input class="form-input" id="prod-mov-qty"
+          type="number" min="1"></div>
+      <div class="form-group" id="prod-cost-field"><label class="form-label">Custo Unitário</label>
+        <div class="form-prefix"><span>R$</span><input id="prod-mov-cost" type="text" oninput="formatMoneyField(this)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Motivo</label>
+        <input class="form-input" id="prod-mov-reason" type="text"
+          placeholder="Ex: Entrada manual, venda, ajuste de estoque...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observações</label>
+        <textarea class="form-input" id="prod-mov-notes" rows="3" style="resize:vertical;min-height:82px"
+          placeholder="Detalhes adicionais da movimentação, se necessário."></textarea>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeProductMovModal()">Cancelar</button><button
+          class="btn btn-primary" id="btn-save-movimentacao" onclick="saveDetailMovimentacao()">Salvar</button></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-confirmacao">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="confirm-title">Confirmar ação</h2>
+          <p id="confirm-subtitle">Validação necessária antes de continuar.</p>
+        </div>
+        <div class="close-btn" onclick="closeConfirmacao()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg></div>
+      </div>
+      <div class="delete-warning-box" id="confirm-message">Tem certeza de que deseja continuar?</div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="confirm-no-btn" onclick="closeConfirmacao()">Não</button>
+        <button class="btn btn-danger" id="confirm-yes-btn" onclick="confirmarAcao()">Sim</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-root" id="toast-root"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="./js/app.js"></script>
+
+</body>
+
+</html>
