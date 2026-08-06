@@ -3437,16 +3437,15 @@
       </div>
       <div class="form-group">
         <label class="form-label">SKU do Produto</label>
-        <div class="custom-select-wrap" id="cs-compra-sku">
-          <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-compra-sku')">
-            <span class="custom-select-trigger-text" id="cs-compra-sku-label">Selecione um SKU cadastrado...</span>
-          </div>
-          <svg class="custom-select-icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+        <div class="custom-select-trigger" id="compra-sku-trigger" onclick="openSkuSearchModal()"
+          style="cursor:pointer;">
+          <span class="custom-select-trigger-text" id="compra-sku-trigger-label">Selecione um SKU cadastrado...</span>
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            style="color:var(--text-dim); flex-shrink:0;">
+            <circle cx="11" cy="11" r="8" stroke-width="1.8" />
+            <path stroke-linecap="round" stroke-width="1.8" d="M21 21l-4.35-4.35" />
           </svg>
-          <div class="custom-select-dropdown" id="cs-compra-sku-dropdown"></div>
         </div>
-        <select id="compra-sku-select" style="display:none"></select>
         <div id="compra-sku-manual-wrap" style="display:none; margin-top:8px;">
           <input class="form-input" id="compra-sku" placeholder="Digite o novo SKU manualmente..." type="text">
           <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">⚠️ SKU não encontrado nos cadastros. Será
@@ -3570,6 +3569,32 @@
       <div class="modal-footer" style="margin-top: 10px;">
         <button class="btn btn-ghost" onclick="closeModal('compra')">Cancelar</button>
         <button class="btn btn-primary" id="btn-save-compra" onclick="saveCompra()">Registrar Compra</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-sku-search" style="z-index:300;">
+    <div class="modal" style="width: 420px; display:flex; flex-direction:column;">
+      <div class="modal-header">
+        <div>
+          <h2>Selecionar SKU</h2>
+          <p>Busque por código ou nome do produto</p>
+        </div>
+        <div class="close-btn" onclick="closeSkuSearchModal()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      </div>
+      <div class="search-box" style="margin-bottom:12px;">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8" stroke-width="1.8" />
+          <path stroke-linecap="round" stroke-width="1.8" d="M21 21l-4.35-4.35" />
+        </svg>
+        <input type="text" id="sku-search-input" placeholder="Buscar por SKU ou nome do produto..."
+          oninput="renderSkuSearchResults()" autocomplete="off">
+      </div>
+      <div id="sku-search-results" style="overflow-y:auto; max-height:360px; border:1px solid var(--border); border-radius:10px;">
       </div>
     </div>
   </div>
@@ -4878,35 +4903,75 @@
       rebuildCustomSelect('cs-compra-conta', getCompraContaOptions(), normalizedValue);
     }
 
-    /* ── SKU CUSTOM SELECT (modal compra) ── */
-    function getSkuSelectOptions() {
-      const skus = loadSkus();
-      const opts = skus.map(s => ({ value: s.code, label: `${s.code} — ${s.name}` }));
-      return [
-        { value: '__novo__', label: '+ Inserir SKU manualmente...' },
-        ...opts
-      ];
-    }
-
+    /* ── SKU SEARCH MODAL (modal compra) ── */
+    // Sincroniza o SKU exibido/selecionado no modal de compra (usado ao abrir
+    // para Nova Compra, Editar Compra e Duplicar Compra). É a única função
+    // responsável por popular o campo oculto #compra-sku-hidden — antes esse
+    // campo só era preenchido quando o usuário clicava manualmente numa opção,
+    // o que fazia a duplicação/edição "esquecer" o SKU já cadastrado.
     function syncCompraSkuSelect(code) {
-      const opts = getSkuSelectOptions();
-      rebuildCustomSelect('cs-compra-sku', opts, code || '');
-      // Se vier um code que não existe nos SKUs cadastrados, mostra campo manual
-      const exists = loadSkus().some(s => s.code === code);
-      if (code && !exists) {
-        showSkuManualInput(code);
+      const normalized = (code || '').trim();
+      const exists = normalized && loadSkus().some(s => s.code === normalized);
+      if (normalized && !exists) {
+        document.getElementById('compra-sku-hidden').value = '';
+        showSkuManualInput(normalized);
+        updateSkuTriggerLabel('');
       } else {
+        document.getElementById('compra-sku-hidden').value = exists ? normalized : '';
         hideSkuManualInput();
+        updateSkuTriggerLabel(exists ? normalized : '');
       }
     }
 
-    function pickCompraSkuOption(value) {
-      if (value === '__novo__') {
-        showSkuManualInput('');
+    function updateSkuTriggerLabel(code) {
+      const label = document.getElementById('compra-sku-trigger-label');
+      if (!label) return;
+      if (!code) { label.textContent = 'Selecione um SKU cadastrado...'; return; }
+      const sku = loadSkus().find(s => s.code === code);
+      label.textContent = sku ? `${sku.code} — ${sku.name}` : code;
+    }
+
+    function openSkuSearchModal() {
+      const input = document.getElementById('sku-search-input');
+      input.value = '';
+      renderSkuSearchResults();
+      openModal('sku-search');
+      setTimeout(() => input.focus(), 50);
+    }
+
+    function closeSkuSearchModal() { closeModal('sku-search'); }
+
+    function renderSkuSearchResults() {
+      const q = document.getElementById('sku-search-input').value.trim().toLowerCase();
+      const skus = loadSkus();
+      const filtered = q ? skus.filter(s => (s.code || '').toLowerCase().includes(q) || (s.name || '').toLowerCase().includes(q)) : skus;
+      const currentCode = document.getElementById('compra-sku-hidden').value;
+      const box = document.getElementById('sku-search-results');
+      const qArg = JSON.stringify(q).replace(/'/g, '&#39;');
+      let html = `<div class="custom-select-option" onclick='selectManualSku(${qArg})' style="color:var(--accent); font-weight:600;"><span class="opt-check"></span>+ Inserir SKU manualmente...</div>`;
+      if (!filtered.length) {
+        html += `<div style="padding:16px; text-align:center; color:var(--text-dim); font-size:13px;">Nenhum SKU encontrado.</div>`;
       } else {
-        hideSkuManualInput();
-        document.getElementById('compra-sku-hidden').value = value;
+        html += filtered.map(s => {
+          const codeArg = JSON.stringify(s.code).replace(/'/g, '&#39;');
+          return `<div class="custom-select-option${s.code === currentCode ? ' selected' : ''}" onclick='selectSkuFromSearch(${codeArg})'><span class="opt-check"></span>${escapeHtml(s.code)} — ${escapeHtml(s.name)}</div>`;
+        }).join('');
       }
+      box.innerHTML = html;
+    }
+
+    function selectSkuFromSearch(code) {
+      document.getElementById('compra-sku-hidden').value = code;
+      hideSkuManualInput();
+      updateSkuTriggerLabel(code);
+      closeSkuSearchModal();
+    }
+
+    function selectManualSku(prefill) {
+      document.getElementById('compra-sku-hidden').value = '';
+      showSkuManualInput(prefill || '');
+      updateSkuTriggerLabel('');
+      closeSkuSearchModal();
     }
 
     function showSkuManualInput(prefill) {
@@ -5837,8 +5902,6 @@
       const real = document.getElementById(realId);
       if (real) { real.value = value; real.dispatchEvent(new Event('change')); }
       wrap.classList.remove('open');
-      // Hook especial para SKU de compra
-      if (id === 'cs-compra-sku') pickCompraSkuOption(value);
     }
     document.addEventListener('click', function (e) {
       if (!e.target.closest('.custom-select-wrap')) {
