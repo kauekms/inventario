@@ -21,19 +21,19 @@
       --surface: #151516;
       --surface2: #202124;
       --border: #34363a;
-      --accent: #9ca3af;
-      --accent-dim: rgba(156, 163, 175, 0.16);
+      --accent: #7c9cff;
+      --accent-dim: rgba(124, 156, 255, 0.16);
       --text: #f1f1f2;
       --text-muted: #a1a1aa;
       --text-dim: #6b7280;
-      --green: #c7c7c7;
-      --danger: #a1a1aa;
-      --blue: #b8bcc4;
-      --yellow: #a8a8a8;
+      --green: #34d399;
+      --danger: #f87171;
+      --blue: #38bdf8;
+      --yellow: #fbbf24;
       --sidebar-w: 220px;
       --btn-primary-bg: var(--accent);
-      --btn-primary-bg-hover: #d1d5db;
-      --btn-primary-text: #111;
+      --btn-primary-bg-hover: #93aeff;
+      --btn-primary-text: #0b0d17;
       --hover-strong: #28282d;
     }
 
@@ -270,6 +270,95 @@
       align-items: center;
       gap: 14px;
     }
+
+    .quick-search-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: border-color .15s ease, color .15s ease;
+    }
+
+    .quick-search-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .quick-search-btn kbd {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 10px;
+      font-family: inherit;
+    }
+
+    @media (max-width: 720px) {
+      .quick-search-btn span { display: none; }
+      .quick-search-btn kbd { display: none; }
+    }
+
+    .quick-search-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: 200;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 12vh;
+    }
+
+    .quick-search-overlay.open { display: flex; }
+
+    .quick-search-panel {
+      width: min(560px, 92vw);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--modal-shadow, 0 8px 32px rgba(0,0,0,.45));
+      overflow: hidden;
+    }
+
+    .quick-search-input {
+      width: 100%;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      padding: 16px 18px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .quick-search-results {
+      max-height: 340px;
+      overflow-y: auto;
+      padding: 6px;
+    }
+
+    .quick-search-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .quick-search-item:hover, .quick-search-item.active-result {
+      background: var(--accent-dim);
+    }
+
+    .quick-search-item .qs-name { font-weight: 700; font-size: 13px; }
+    .quick-search-item .qs-meta { font-size: 11px; color: var(--text-muted); }
+    .quick-search-empty { padding: 22px 16px; color: var(--text-muted); font-size: 13px; text-align: center; }
 
     .avatar {
       width: 30px;
@@ -2329,6 +2418,10 @@
       border-color: rgba(87, 209, 139, .26);
     }
 
+    .kpi-card.critical .kpi-value { color: var(--danger); }
+    .kpi-card.warning .kpi-value { color: var(--yellow); }
+    .kpi-card.success .kpi-value { color: var(--green); }
+
     .dashboard-grid {
       display: grid;
       grid-template-columns: minmax(280px, .85fr) minmax(320px, 1.15fr);
@@ -2341,6 +2434,22 @@
       border-radius: 14px;
       padding: 18px;
       min-height: 154px;
+    }
+
+    .analytics-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 220px;
+    }
+
+    @media (max-width: 860px) {
+      .analytics-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .panel-title {
@@ -2648,6 +2757,13 @@
 
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
+  <div class="quick-search-overlay" id="quick-search-overlay" onclick="if(event.target===this) closeQuickSearch()">
+    <div class="quick-search-panel">
+      <input class="quick-search-input" id="quick-search-input" type="text" placeholder="Buscar produto por nome ou SKU…" autocomplete="off">
+      <div class="quick-search-results" id="quick-search-results"></div>
+    </div>
+  </div>
+
   <aside class="sidebar" id="sidebar">
     <div class="logo">
       <div class="logo-icon">K.B</div>
@@ -2726,6 +2842,13 @@
         <span>Dashboard</span><span class="sep">›</span><span class="current">Início</span>
       </div>
       <div class="topbar-right">
+        <button class="quick-search-btn" onclick="openQuickSearch()" title="Busca rápida">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M18 10.5a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z" />
+          </svg>
+          <span>Buscar</span>
+          <kbd>Ctrl K</kbd>
+        </button>
         <div class="app-status"><span class="app-status-dot"></span><span>Supabase</span></div>
         <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Alternar tema"
           title="Alternar tema claro/escuro">
@@ -2834,6 +2957,41 @@
               <div class="empty-state" style="padding:22px 10px">
                 <p>Nenhum produto crítico.</p>
               </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="dashboard-grid analytics-grid">
+          <section class="panel-card">
+            <div class="panel-title">
+              <div>
+                <h2>Evolução do valor em estoque</h2>
+                <p>Capital investido em produtos, dia a dia.</p>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="chart-valor-estoque" height="220"></canvas></div>
+          </section>
+          <section class="panel-card">
+            <div class="panel-title">
+              <div>
+                <h2>Curva ABC</h2>
+                <p>Produtos que concentram o valor investido em estoque.</p>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="chart-curva-abc" height="220"></canvas></div>
+          </section>
+        </div>
+
+        <div class="dashboard-grid">
+          <section class="panel-card" style="grid-column:1 / -1">
+            <div class="panel-title">
+              <div>
+                <h2>Previsão de ruptura</h2>
+                <p>Produtos com saída ativa e poucos dias de estoque restante, pelo consumo médio dos últimos 30 dias.</p>
+              </div>
+            </div>
+            <div class="attention-list" id="dash-ruptura">
+              <div class="empty-state" style="padding:22px 10px"><p>Sem dados suficientes de consumo ainda.</p></div>
             </div>
           </section>
         </div>
@@ -3325,6 +3483,7 @@
           </div>
           <div class="detail-actions">
             <button type="button" class="btn btn-ghost" onclick="openEditProductModal()">Editar cadastro</button>
+            <button type="button" class="btn btn-ghost" id="btn-montar-kit" style="display:none" onclick="openMontarKitModal()">🧩 Montar Kit</button>
             <button type="button" class="btn btn-ghost" onclick="openRedefinirCustoModal()" style="border-color:var(--accent);color:var(--accent)">Redefinir Custo Médio</button>
             <button type="button" class="btn btn-danger" onclick="openDeleteProductModal()">Excluir</button>
           </div>
@@ -3346,6 +3505,7 @@
         <div class="detail-tabs">
           <button class="detail-tab active" id="tab-movs" onclick="selectDetailTab('movs')">Movimentações</button>
           <button class="detail-tab" id="tab-costs" onclick="selectDetailTab('costs')">Histórico de Custos</button>
+          <button class="detail-tab hidden" id="tab-kit" onclick="selectDetailTab('kit')">Componentes do Kit</button>
         </div>
 
         <section id="detail-movs-tab">
@@ -3375,6 +3535,27 @@
             </div>
           </div>
           <div class="movement-box" id="detail-costs-box">Nenhum histórico de custo registrado</div>
+        </section>
+
+        <section id="detail-kit-tab" class="hidden">
+          <div class="detail-section-head">
+            <div>
+              <h2>Componentes do Kit</h2>
+              <p>Produtos que são consumidos do estoque ao montar este kit</p>
+            </div>
+          </div>
+          <div class="movement-box has-items" id="kit-capacidade-box" style="margin-bottom:12px"></div>
+          <div class="movement-box has-items" id="kit-componentes-box">Nenhum componente cadastrado</div>
+          <div class="detail-section-head" style="margin-top:20px">
+            <div>
+              <h3 style="margin:0">Adicionar componente</h3>
+            </div>
+          </div>
+          <div class="filter-row" style="gap:10px;flex-wrap:wrap">
+            <select class="form-input" id="kit-add-componente-select" style="max-width:280px"></select>
+            <input class="form-input" id="kit-add-componente-qty" type="number" min="1" value="1" style="max-width:100px" placeholder="Qtd por kit">
+            <button class="btn btn-primary" onclick="addKitComponente()">+ Adicionar</button>
+          </div>
         </section>
       </div>
 
@@ -3848,6 +4029,31 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="modal-montar-kit">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Montar Kit</h2>
+          <p>Consome o estoque dos componentes e credita o estoque do kit.</p>
+        </div>
+        <div class="close-btn" onclick="closeMontarKitModal()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      </div>
+      <div class="movement-box has-items" id="montar-kit-preview" style="margin-bottom:14px"></div>
+      <div class="form-group">
+        <label class="form-label">Quantas unidades do kit montar?</label>
+        <input class="form-input" id="montar-kit-qty" type="number" min="1" value="1" oninput="atualizarPreviewMontagemKit()">
+      </div>
+      <div class="modal-footer" style="margin-top:22px">
+        <button class="btn btn-ghost" onclick="closeMontarKitModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-montar-kit-confirmar" onclick="confirmarMontarKit()">Montar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="modal-prod-mov">
     <div class="modal">
       <div class="modal-header">
@@ -3961,11 +4167,13 @@
       financeiro: [],
       cartoes: [],
       contas: [],
+      kitComponentes: [],
       logs: []
     };
 
     function cloneRows(rows) { return (rows || []).map(r => ({ ...r })); }
     function loadSkus() { return cloneRows(appData.skus); }
+    function loadKitComponentes() { return cloneRows(appData.kitComponentes); }
     function loadMovs() { return cloneRows(appData.movs); }
     function loadCompras() { return cloneRows(appData.compras); }
     function loadFinanceiro() { return cloneRows(appData.financeiro); }
@@ -4018,6 +4226,9 @@
         cost: n(s.cost), package_cost: n(s.packageCost), tax: cleanText(s.tax, 'Padrão da conta'),
         qty: i(s.qty), min: i(s.min, 5), ads: n(s.ads), sync: Boolean(s.sync), anunciado: Boolean(s.anunciado), super: Boolean(s.super)
       };
+    }
+    function mapKitComponenteFromDb(r) {
+      return { id: r.id, kitId: r.kit_id, componenteId: r.componente_id, qty: i(r.qty, 1), createdAt: r.created_at };
     }
     function mapMovFromDb(r) {
       return {
@@ -4111,6 +4322,7 @@
       cartoes: 'id,nome,digitos,limite,utilizado,created_at,updated_at',
       lancamentos: 'id,descricao,tipo,valor,data,categoria,cartao_id,created_at',
       contas: 'id,plataforma,usuario,created_at,updated_at',
+      kit_componentes: 'id,kit_id,componente_id,qty,created_at',
       system_logs: 'id,tabela,acao,registro_id,descricao,dados_anteriores,dados_novos,usuario_id,usuario_role,origem,created_at'
     };
 
@@ -4130,13 +4342,14 @@
         // de Logs, que já faz sua própria busca (refreshLogs) ao ser aberta —
         // buscá-la aqui de novo seria uma requisição inteira desperdiçada
         // em toda inicialização/F5.
-        const [produtosR, movimentacoesR, comprasR, cartoesR, lancamentosR, contasR] = await Promise.allSettled([
+        const [produtosR, movimentacoesR, comprasR, cartoesR, lancamentosR, contasR, kitComponentesR] = await Promise.allSettled([
           fetchTable('produtos', 'created_at', true, TABLE_COLUMNS.produtos),
           fetchTable('movimentacoes', 'date', false, TABLE_COLUMNS.movimentacoes),
           fetchTable('compras', 'date', false, TABLE_COLUMNS.compras),
           fetchTable('cartoes', 'created_at', true, TABLE_COLUMNS.cartoes),
           fetchTable('lancamentos', 'data', false, TABLE_COLUMNS.lancamentos),
-          fetchTable('contas', 'created_at', true, TABLE_COLUMNS.contas)
+          fetchTable('contas', 'created_at', true, TABLE_COLUMNS.contas),
+          fetchTable('kit_componentes', 'created_at', true, TABLE_COLUMNS.kit_componentes)
         ]);
 
         // Tabelas essenciais: se alguma falhar, propaga o erro como antes.
@@ -4158,6 +4371,13 @@
         } else {
           console.warn('Tabela de contas ainda não encontrada. Rode a migration_contas.sql no Supabase.', contasR.reason);
           appData.contas = [];
+        }
+
+        if (kitComponentesR.status === 'fulfilled') {
+          appData.kitComponentes = kitComponentesR.value.map(mapKitComponenteFromDb);
+        } else {
+          console.warn('Tabela kit_componentes ainda não encontrada.', kitComponentesR.reason);
+          appData.kitComponentes = [];
         }
       } catch (err) {
         handleAsyncError(err, 'Não foi possível carregar os dados do Supabase.');
@@ -4295,11 +4515,87 @@
     }
     // ESC fecha modal aberto
     document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        toggleQuickSearch();
+        return;
+      }
       if (e.key === 'Escape') {
+        if (document.getElementById('quick-search-overlay').classList.contains('open')) { closeQuickSearch(); return; }
         const open = document.querySelector('.modal-overlay.open');
         if (open) open.classList.remove('open');
         if (document.querySelector('.sidebar.open')) closeSidebar();
       }
+      if (document.getElementById('quick-search-overlay').classList.contains('open')) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          moveQuickSearchSelection(e.key === 'ArrowDown' ? 1 : -1);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          confirmQuickSearchSelection();
+        }
+      }
+    });
+
+    // ─── BUSCA RÁPIDA (Ctrl/Cmd+K) ───────────────────────────────────────────
+    let quickSearchResults = [];
+    let quickSearchIndex = -1;
+    function toggleQuickSearch() {
+      const overlay = document.getElementById('quick-search-overlay');
+      overlay.classList.contains('open') ? closeQuickSearch() : openQuickSearch();
+    }
+    function openQuickSearch() {
+      const overlay = document.getElementById('quick-search-overlay');
+      overlay.classList.add('open');
+      const input = document.getElementById('quick-search-input');
+      input.value = '';
+      renderQuickSearchResults('');
+      setTimeout(() => input.focus(), 30);
+    }
+    function closeQuickSearch() {
+      document.getElementById('quick-search-overlay').classList.remove('open');
+    }
+    function renderQuickSearchResults(termo) {
+      const box = document.getElementById('quick-search-results');
+      const t = termo.trim().toLowerCase();
+      const skus = loadSkus();
+      quickSearchResults = (t
+        ? skus.filter(s => (s.name || '').toLowerCase().includes(t) || (s.code || '').toLowerCase().includes(t))
+        : skus.slice(0, 8)
+      ).slice(0, 8);
+      quickSearchIndex = quickSearchResults.length ? 0 : -1;
+
+      if (!quickSearchResults.length) {
+        box.innerHTML = `<div class="quick-search-empty">${t ? 'Nenhum produto encontrado.' : 'Digite para buscar um produto por nome ou SKU.'}</div>`;
+        return;
+      }
+      box.innerHTML = quickSearchResults.map((s, idx) => `
+        <div class="quick-search-item${idx === 0 ? ' active-result' : ''}" data-idx="${idx}" onclick="selecionarResultadoBusca(${idx})">
+          <span>${s.emoji || '📦'}</span>
+          <div>
+            <div class="qs-name">${escapeHtml(s.name)}</div>
+            <div class="qs-meta">${escapeHtml(s.code)} · ${s.qty} un. em estoque</div>
+          </div>
+        </div>`).join('');
+    }
+    function moveQuickSearchSelection(delta) {
+      if (!quickSearchResults.length) return;
+      quickSearchIndex = (quickSearchIndex + delta + quickSearchResults.length) % quickSearchResults.length;
+      document.querySelectorAll('.quick-search-item').forEach((el, idx) => el.classList.toggle('active-result', idx === quickSearchIndex));
+    }
+    function confirmQuickSearchSelection() {
+      if (quickSearchIndex < 0 || !quickSearchResults[quickSearchIndex]) return;
+      selecionarResultadoBusca(quickSearchIndex);
+    }
+    function selecionarResultadoBusca(idx) {
+      const sku = quickSearchResults[idx];
+      if (!sku) return;
+      closeQuickSearch();
+      openProductDetail(sku.id);
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const input = document.getElementById('quick-search-input');
+      if (input) input.addEventListener('input', () => renderQuickSearchResults(input.value));
     });
     function toggleSubmenu(id) {
       const sub = document.getElementById(id); const expId = id === 'produtos-sub' ? 'produtos-expand' : 'compras-expand';
@@ -4569,7 +4865,131 @@
       </div>`;
       }).join('');
     }
-    function renderProductDetail() { const sku = getCurrentSku(); if (!sku) { navigate('estoque'); return; } const movs = loadMovs().filter(m => idsMatch(m.skuId, sku.id)); const entradas = movs.filter(m => m.type === 'entrada'); const saidas = movs.filter(m => m.type === 'saida'); const stockValue = sku.qty * sku.cost; document.getElementById('detail-emoji').textContent = sku.emoji || '📦'; document.getElementById('detail-name').textContent = sku.name; document.getElementById('detail-sku').textContent = sku.code; document.getElementById('detail-created').textContent = fmtOnlyDate(sku.createdAt); document.getElementById('detail-kind').textContent = (sku.kind === 'kit') ? 'KIT' : 'Unitário'; document.getElementById('detail-qty-pill').textContent = `${sku.qty} unidades`; document.getElementById('detail-stock-value-pill').textContent = `${fmt(stockValue)} em estoque`; const anunciadoPill = document.getElementById('detail-anunciado-pill'); anunciadoPill.style.display = sku.anunciado ? '' : 'none'; document.getElementById('detail-average-cost').textContent = fmt(sku.cost || 0); const avgPurchaseCost = computeAverageCost(entradas); document.getElementById('detail-avg-purchase-cost').textContent = fmt(avgPurchaseCost); const avgSub = document.getElementById('detail-avg-purchase-sub'); if (!entradas.length) { avgSub.textContent = 'Sem entradas registradas'; } else { const diff = (sku.cost || 0) - avgPurchaseCost; const diffTxt = diff > 0.005 ? ` · ${fmt(Math.abs(diff))} acima do custo atual` : diff < -0.005 ? ` · ${fmt(Math.abs(diff))} abaixo do custo atual` : ' · igual ao custo atual'; avgSub.textContent = `Baseado em ${entradas.length} entrada${entradas.length === 1 ? '' : 's'}${diffTxt}`; } document.getElementById('filter-todos').textContent = `Todos (${movs.length})`; document.getElementById('filter-entrada').textContent = `Entradas (${entradas.length})`; document.getElementById('filter-saida').textContent = `Saídas (${saidas.length})`; document.getElementById('filter-todos').classList.toggle('active', detailMovFilter === 'todos'); document.getElementById('filter-entrada').classList.toggle('active', detailMovFilter === 'entrada'); document.getElementById('filter-saida').classList.toggle('active', detailMovFilter === 'saida'); renderDetailMovements(movs); renderDetailCosts(entradas); }
+    function renderProductDetail() { const sku = getCurrentSku(); if (!sku) { navigate('estoque'); return; } const movs = loadMovs().filter(m => idsMatch(m.skuId, sku.id)); const entradas = movs.filter(m => m.type === 'entrada'); const saidas = movs.filter(m => m.type === 'saida'); const stockValue = sku.qty * sku.cost; document.getElementById('detail-emoji').textContent = sku.emoji || '📦'; document.getElementById('detail-name').textContent = sku.name; document.getElementById('detail-sku').textContent = sku.code; document.getElementById('detail-created').textContent = fmtOnlyDate(sku.createdAt); document.getElementById('detail-kind').textContent = (sku.kind === 'kit') ? 'KIT' : 'Unitário'; document.getElementById('detail-qty-pill').textContent = `${sku.qty} unidades`; document.getElementById('detail-stock-value-pill').textContent = `${fmt(stockValue)} em estoque`; const anunciadoPill = document.getElementById('detail-anunciado-pill'); anunciadoPill.style.display = sku.anunciado ? '' : 'none'; document.getElementById('detail-average-cost').textContent = fmt(sku.cost || 0); const avgPurchaseCost = computeAverageCost(entradas); document.getElementById('detail-avg-purchase-cost').textContent = fmt(avgPurchaseCost); const avgSub = document.getElementById('detail-avg-purchase-sub'); if (!entradas.length) { avgSub.textContent = 'Sem entradas registradas'; } else { const diff = (sku.cost || 0) - avgPurchaseCost; const diffTxt = diff > 0.005 ? ` · ${fmt(Math.abs(diff))} acima do custo atual` : diff < -0.005 ? ` · ${fmt(Math.abs(diff))} abaixo do custo atual` : ' · igual ao custo atual'; avgSub.textContent = `Baseado em ${entradas.length} entrada${entradas.length === 1 ? '' : 's'}${diffTxt}`; } document.getElementById('filter-todos').textContent = `Todos (${movs.length})`; document.getElementById('filter-entrada').textContent = `Entradas (${entradas.length})`; document.getElementById('filter-saida').textContent = `Saídas (${saidas.length})`; document.getElementById('filter-todos').classList.toggle('active', detailMovFilter === 'todos'); document.getElementById('filter-entrada').classList.toggle('active', detailMovFilter === 'entrada'); document.getElementById('filter-saida').classList.toggle('active', detailMovFilter === 'saida'); renderDetailMovements(movs); renderDetailCosts(entradas); const isKit = sku.kind === 'kit'; document.getElementById('tab-kit').classList.toggle('hidden', !isKit); document.getElementById('btn-montar-kit').style.display = isKit ? '' : 'none'; if (isKit) renderKitComponentesTab(sku); else if (document.getElementById('tab-kit').classList.contains('active')) selectDetailTab('movs'); }
+    function calcularCapacidadeKit(kitId) {
+      const componentes = loadKitComponentes().filter(c => idsMatch(c.kitId, kitId));
+      if (!componentes.length) return { capacidade: 0, componentes: [] };
+      const skus = loadSkus();
+      let capacidade = Infinity;
+      const linhas = componentes.map(c => {
+        const prod = skus.find(s => idsMatch(s.id, c.componenteId));
+        const estoque = prod ? Number(prod.qty) || 0 : 0;
+        const possivel = Math.floor(estoque / c.qty);
+        capacidade = Math.min(capacidade, possivel);
+        return { id: c.id, componenteId: c.componenteId, nome: prod ? prod.name : 'Produto removido', emoji: prod ? prod.emoji : '❓', estoque, qtyPorKit: c.qty };
+      });
+      return { capacidade: capacidade === Infinity ? 0 : capacidade, componentes: linhas };
+    }
+    function renderKitComponentesTab(sku) {
+      const { capacidade, componentes } = calcularCapacidadeKit(sku.id);
+      const capBox = document.getElementById('kit-capacidade-box');
+      capBox.innerHTML = `<strong>Dá pra montar ${capacidade} kit${capacidade === 1 ? '' : 's'}</strong> com o estoque atual dos componentes.`;
+
+      const box = document.getElementById('kit-componentes-box');
+      if (!componentes.length) {
+        box.classList.remove('has-items');
+        box.textContent = 'Nenhum componente cadastrado. Adicione abaixo os produtos que compõem este kit.';
+      } else {
+        box.classList.add('has-items');
+        box.innerHTML = componentes.map(c => `
+          <div class="detail-mov-row">
+            <div class="mov-badge in">${c.emoji || '📦'}</div>
+            <div class="detail-mov-info">
+              <strong>${c.nome}</strong>
+              <span>${c.qtyPorKit} unidade${c.qtyPorKit === 1 ? '' : 's'} por kit · estoque atual: ${c.estoque} un</span>
+            </div>
+            <div style="text-align:right">
+              <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="removeKitComponente('${c.id}')">Remover</button>
+            </div>
+          </div>`).join('');
+      }
+
+      const select = document.getElementById('kit-add-componente-select');
+      const jaAdicionados = new Set(componentes.map(c => c.componenteId));
+      const candidatos = loadSkus().filter(s => s.kind !== 'kit' && !idsMatch(s.id, sku.id) && !jaAdicionados.has(s.id));
+      select.innerHTML = candidatos.length
+        ? candidatos.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('')
+        : '<option value="">Nenhum produto unitário disponível</option>';
+    }
+    async function addKitComponente() {
+      const sku = getCurrentSku();
+      if (!sku) return;
+      const select = document.getElementById('kit-add-componente-select');
+      const componenteId = select.value;
+      const qty = parseInt(document.getElementById('kit-add-componente-qty').value, 10);
+      if (!componenteId) { showToast('warning', 'Selecione um produto', 'Não há produto selecionado para adicionar como componente.'); return; }
+      if (!qty || qty < 1) { showToast('warning', 'Quantidade inválida', 'Informe quantas unidades desse componente cada kit usa.'); return; }
+      try {
+        assertSupabase();
+        const { error } = await db.from('kit_componentes').insert({ kit_id: sku.id, componente_id: componenteId, qty });
+        if (error) throw error;
+        await loadAllData();
+        renderProductDetail();
+        showToast('success', 'Componente adicionado', 'A composição do kit foi atualizada.');
+      } catch (err) { handleAsyncError(err, 'Erro ao adicionar componente.'); }
+    }
+    async function removeKitComponente(id) {
+      try {
+        assertSupabase();
+        const { error } = await db.from('kit_componentes').delete().eq('id', id);
+        if (error) throw error;
+        await loadAllData();
+        renderProductDetail();
+      } catch (err) { handleAsyncError(err, 'Erro ao remover componente.'); }
+    }
+    function openMontarKitModal() {
+      const sku = getCurrentSku();
+      if (!sku || sku.kind !== 'kit') return;
+      document.getElementById('montar-kit-qty').value = 1;
+      montarKitClientRef = makeId();
+      atualizarPreviewMontagemKit();
+      openModal('montar-kit');
+    }
+    function closeMontarKitModal() { closeModal('montar-kit'); }
+    function atualizarPreviewMontagemKit() {
+      const sku = getCurrentSku();
+      if (!sku) return;
+      const qty = parseInt(document.getElementById('montar-kit-qty').value, 10) || 0;
+      const { capacidade, componentes } = calcularCapacidadeKit(sku.id);
+      const preview = document.getElementById('montar-kit-preview');
+      if (!componentes.length) {
+        preview.innerHTML = 'Este kit ainda não tem componentes cadastrados. Adicione componentes na aba "Componentes do Kit" antes de montar.';
+        return;
+      }
+      preview.innerHTML = `<div style="margin-bottom:8px">Capacidade atual: <strong>${capacidade} kit${capacidade === 1 ? '' : 's'}</strong></div>` + componentes.map(c => {
+        const necessario = c.qtyPorKit * qty;
+        const suficiente = c.estoque >= necessario;
+        return `<div class="detail-mov-row"><div class="mov-badge ${suficiente ? 'in' : 'out'}">${c.emoji || '📦'}</div><div class="detail-mov-info"><strong>${c.nome}</strong><span>Precisa de ${necessario} · disponível ${c.estoque}${suficiente ? '' : ' ⚠️ insuficiente'}</span></div></div>`;
+      }).join('');
+    }
+    let montarKitClientRef = null;
+    let isMontandoKit = false;
+    async function confirmarMontarKit() {
+      if (isMontandoKit) return;
+      const sku = getCurrentSku();
+      if (!sku) return;
+      const qty = parseInt(document.getElementById('montar-kit-qty').value, 10);
+      if (!qty || qty < 1) { showToast('warning', 'Quantidade inválida', 'Informe quantos kits deseja montar.'); return; }
+      isMontandoKit = true;
+      setButtonLoading('btn-montar-kit-confirmar', true);
+      try {
+        assertSupabase();
+        const { error } = await db.rpc('registrar_montagem_kit', {
+          p_kit_id: sku.id,
+          p_qty: qty,
+          p_note: 'Montagem de kit',
+          p_notes: '',
+          p_client_ref: montarKitClientRef
+        });
+        if (error) throw error;
+        montarKitClientRef = null;
+        await loadAllData();
+        closeMontarKitModal();
+        showToast('success', 'Kit montado', `${qty} kit${qty === 1 ? '' : 's'} montado(s) com sucesso.`);
+        renderProductDetail(); renderKpis(); renderTable(); renderDashboard();
+      } catch (err) { handleAsyncError(err, 'Erro ao montar kit.'); }
+      finally { isMontandoKit = false; setButtonLoading('btn-montar-kit-confirmar', false, 'Montar'); }
+    }
     function renderDetailMovements(movs) { const box = document.getElementById('detail-movements-box'); const filtered = movs.filter(m => detailMovFilter === 'todos' ? true : m.type === detailMovFilter); if (filtered.length === 0) { box.classList.remove('has-items'); box.textContent = 'Nenhuma movimentação registrada'; return; } box.classList.add('has-items'); box.innerHTML = filtered.map(m => { const isEntrada = m.type === 'entrada'; const metaParts = [fmtDate(m.date)]; if (isEntrada) metaParts.push('Entrada de estoque'); else metaParts.push('Saída de estoque'); if (m.note && m.note !== 'Entrada de estoque' && m.note !== 'Saída de estoque') metaParts.push(m.note); if (m.notes) metaParts.push(m.notes); if (m.qtyAfter !== undefined) metaParts.push(`Estoque após: ${m.qtyAfter} un`); if (isEntrada && m.cost) metaParts.push(`Custo p/ Unid: ${fmt(m.cost)}`); return ` <div class="detail-mov-row"> <div class="mov-badge ${isEntrada ? 'in' : 'out'}">${isEntrada ? '📦' : '🚚'}</div> <div class="detail-mov-info"> <strong>${isEntrada ? 'Entrada' : 'Saída'} de ${m.qty} unidade${m.qty === 1 ? '' : 's'}</strong> <span>${metaParts.join(' · ')}</span> </div> <div style="text-align:right"> <div class="mov-qty ${isEntrada ? 'in' : 'out'}">${isEntrada ? '+' : '-'}${m.qty}</div> </div> </div>`; }).join(''); }
     function renderDetailCosts(entradas) { const box = document.getElementById('detail-costs-box'); if (!entradas.length) { box.classList.remove('has-items'); box.textContent = 'Nenhum histórico de custo registrado'; return; } box.classList.add('has-items'); box.innerHTML = entradas.map(m => { const prevCost = m.previousCost !== undefined ? m.previousCost : null; const costChanged = prevCost !== null && prevCost !== m.cost; return ` <div class="detail-mov-row"> <div class="mov-badge in">$</div> <div class="detail-mov-info"> <strong>${fmt(m.cost || 0)} / unidade${costChanged ? ' ↑' : ''}</strong> <span>${fmtDate(m.date)} · ${m.qty} unidade${m.qty === 1 ? '' : 's'} entrada</span> </div> <div style="text-align:right;font-size:12px;color:var(--text-muted)">${costChanged ? fmt(prevCost) + ' → ' + fmt(m.cost) : fmt(m.cost)}</div> </div>`; }).join(''); }
     function selectEditProductKind(kind) { editProductKind = kind; const isUnit = kind === 'unitario'; document.getElementById('edit-prod-unitario').checked = isUnit; document.getElementById('edit-prod-kit').checked = !isUnit; document.getElementById('edit-card-unitario').classList.toggle('selected', isUnit); document.getElementById('edit-card-kit').classList.toggle('selected', !isUnit); }
@@ -4700,7 +5120,7 @@
     }
 
     function setDetailMovFilter(filter) { detailMovFilter = filter; renderProductDetail(); }
-    function selectDetailTab(tab) { document.getElementById('tab-movs').classList.toggle('active', tab === 'movs'); document.getElementById('tab-costs').classList.toggle('active', tab === 'costs'); document.getElementById('detail-movs-tab').classList.toggle('hidden', tab !== 'movs'); document.getElementById('detail-costs-tab').classList.toggle('hidden', tab !== 'costs'); }
+    function selectDetailTab(tab) { document.getElementById('tab-movs').classList.toggle('active', tab === 'movs'); document.getElementById('tab-costs').classList.toggle('active', tab === 'costs'); document.getElementById('tab-kit').classList.toggle('active', tab === 'kit'); document.getElementById('detail-movs-tab').classList.toggle('hidden', tab !== 'movs'); document.getElementById('detail-costs-tab').classList.toggle('hidden', tab !== 'costs'); document.getElementById('detail-kit-tab').classList.toggle('hidden', tab !== 'kit'); if (tab === 'kit') { const sku = getCurrentSku(); if (sku) renderKitComponentesTab(sku); } }
     function selectDetailMovType(type) { detailMovType = type; document.getElementById('prod-type-entrada').classList.toggle('selected', type === 'entrada'); document.getElementById('prod-type-saida').classList.toggle('selected', type === 'saida'); const costField = document.getElementById('prod-cost-field'); const costInput = document.getElementById('prod-mov-cost'); if (type === 'saida') { costField.style.display = 'none'; costInput.value = ''; } else { costField.style.display = ''; const sku = getCurrentSku(); if (sku) costInput.value = formatMoneyInputValue(sku.cost || 0); } }
     function openDetailMovModal() {
       const sku = getCurrentSku();
@@ -4860,6 +5280,9 @@
         }
       }
 
+      renderRupturaForecast(skus, movs);
+      renderAnalyticsCharts(skus, movs);
+
       const recent = movs.slice(0, 8);
       const container = document.getElementById('dash-movs');
       if (!container) return;
@@ -4879,6 +5302,185 @@
         <div class="mov-date">${fmtDate(m.date)}</div>
       </div>
     </div>`).join('');
+    }
+
+    // ─── ANALYTICS (dashboard avançado) ────────────────────────────────────────
+    let chartScriptPromise = null;
+    function loadChartScript() {
+      if (window.Chart) return Promise.resolve(window.Chart);
+      if (chartScriptPromise) return chartScriptPromise;
+      chartScriptPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js';
+        script.async = true;
+        script.onload = () => resolve(window.Chart);
+        script.onerror = () => reject(new Error('Não foi possível carregar a biblioteca de gráficos.'));
+        document.head.appendChild(script);
+      });
+      return chartScriptPromise;
+    }
+
+    let chartValorEstoque = null;
+    let chartCurvaAbc = null;
+
+    // Reconstrói, dia a dia, o valor total em estoque a partir do histórico de
+    // movimentações (qty_after/average_cost_after de cada SKU). Não depende de
+    // nenhuma tabela nova: usa só o que já é gravado a cada entrada/saída.
+    function computeStockValueSeries(skus, movs) {
+      if (!movs.length) return { labels: [], values: [] };
+      const sorted = [...movs].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const first = new Date(sorted[0].date);
+      const today = new Date();
+      const totalDays = Math.max(1, Math.min(90, Math.ceil((today - first) / 86400000) + 1));
+      const startDay = new Date(today);
+      startDay.setDate(startDay.getDate() - (totalDays - 1));
+      startDay.setHours(0, 0, 0, 0);
+
+      // Estado "por SKU" com o valor conhecido mais recente até a data corrente.
+      const state = new Map();
+      skus.forEach(s => state.set(String(s.id), { qty: 0, cost: 0 }));
+      let movIdx = 0;
+      const labels = [];
+      const values = [];
+      for (let d = 0; d < totalDays; d++) {
+        const dayEnd = new Date(startDay);
+        dayEnd.setDate(dayEnd.getDate() + d);
+        dayEnd.setHours(23, 59, 59, 999);
+        while (movIdx < sorted.length && new Date(sorted[movIdx].date) <= dayEnd) {
+          const m = sorted[movIdx];
+          state.set(String(m.skuId), { qty: Number(m.qtyAfter) || 0, cost: Number(m.averageCostAfter) || 0 });
+          movIdx++;
+        }
+        let total = 0;
+        state.forEach(v => { total += v.qty * v.cost; });
+        labels.push(dayEnd.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+        values.push(Math.round(total * 100) / 100);
+      }
+      return { labels, values };
+    }
+
+    function computeAbcCurve(skus) {
+      const withValue = skus
+        .map(s => ({ name: s.name, code: s.code, valor: (Number(s.qty) || 0) * (Number(s.cost) || 0) }))
+        .filter(s => s.valor > 0)
+        .sort((a, b) => b.valor - a.valor);
+      const totalValor = withValue.reduce((a, s) => a + s.valor, 0) || 1;
+      let acumulado = 0;
+      const classificados = withValue.map(s => {
+        acumulado += s.valor;
+        const pctAcumulado = acumulado / totalValor;
+        const classe = pctAcumulado <= 0.8 ? 'A' : pctAcumulado <= 0.95 ? 'B' : 'C';
+        return { ...s, classe };
+      });
+      return classificados.slice(0, 15);
+    }
+
+    async function renderAnalyticsCharts(skus, movs) {
+      const canvasValor = document.getElementById('chart-valor-estoque');
+      const canvasAbc = document.getElementById('chart-curva-abc');
+      if (!canvasValor || !canvasAbc) return;
+      try {
+        const Chart = await loadChartScript();
+        const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+        const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+        const textColor = isDark ? '#a1a1aa' : '#52525b';
+
+        const serie = computeStockValueSeries(skus, movs);
+        if (chartValorEstoque) chartValorEstoque.destroy();
+        chartValorEstoque = new Chart(canvasValor.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: serie.labels,
+            datasets: [{
+              label: 'Valor em estoque',
+              data: serie.values,
+              borderColor: '#6d8cff',
+              backgroundColor: 'rgba(109,140,255,0.12)',
+              fill: true,
+              tension: 0.25,
+              pointRadius: 0,
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => fmt(ctx.parsed.y) } } },
+            scales: {
+              x: { ticks: { color: textColor, maxTicksLimit: 8 }, grid: { display: false } },
+              y: { ticks: { color: textColor, callback: (v) => fmt(v) }, grid: { color: gridColor } }
+            }
+          }
+        });
+
+        const abc = computeAbcCurve(skus);
+        const corClasse = { A: '#f97066', B: '#f5b849', C: '#6d8cff' };
+        if (chartCurvaAbc) chartCurvaAbc.destroy();
+        chartCurvaAbc = new Chart(canvasAbc.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: abc.map(a => a.code),
+            datasets: [{
+              label: 'Valor em estoque',
+              data: abc.map(a => a.valor),
+              backgroundColor: abc.map(a => corClasse[a.classe])
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: (ctx) => `${abc[ctx.dataIndex].name} (classe ${abc[ctx.dataIndex].classe}): ${fmt(ctx.parsed.y)}` } }
+            },
+            scales: {
+              x: { ticks: { color: textColor, maxRotation: 45, minRotation: 45 }, grid: { display: false } },
+              y: { ticks: { color: textColor, callback: (v) => fmt(v) }, grid: { color: gridColor } }
+            }
+          }
+        });
+      } catch (err) {
+        console.warn('Não foi possível renderizar os gráficos do dashboard.', err);
+      }
+    }
+
+    // Estima, por produto, quantos dias faltam até zerar o estoque com base no
+    // consumo médio diário (saídas) dos últimos 30 dias.
+    function renderRupturaForecast(skus, movs) {
+      const box = document.getElementById('dash-ruptura');
+      if (!box) return;
+      const trintaDiasAtras = new Date();
+      trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+
+      const consumoPorSku = new Map();
+      movs.forEach(m => {
+        if (m.type !== 'saida') return;
+        if (new Date(m.date) < trintaDiasAtras) return;
+        consumoPorSku.set(m.skuId, (consumoPorSku.get(m.skuId) || 0) + (Number(m.qty) || 0));
+      });
+
+      const previsoes = skus
+        .map(s => {
+          const consumo30d = consumoPorSku.get(s.id) || 0;
+          const consumoDiario = consumo30d / 30;
+          if (consumoDiario <= 0 || (Number(s.qty) || 0) <= 0) return null;
+          const diasRestantes = (Number(s.qty) || 0) / consumoDiario;
+          return { ...s, diasRestantes, consumoDiario };
+        })
+        .filter(Boolean)
+        .filter(p => p.diasRestantes <= 30)
+        .sort((a, b) => a.diasRestantes - b.diasRestantes)
+        .slice(0, 8);
+
+      if (!previsoes.length) {
+        box.innerHTML = `<div class="empty-state" style="padding:22px 10px"><p>Nenhum produto com risco de ruptura nos próximos 30 dias.</p></div>`;
+        return;
+      }
+      box.innerHTML = previsoes.map(p => `
+        <div class="attention-item" onclick="openProductDetail('${p.id}')" style="cursor:pointer">
+          <div><strong>${escapeHtml(p.name)}</strong><span>${escapeHtml(p.code)} · consumo médio ${p.consumoDiario.toFixed(1)}/dia</span></div>
+          <span class="attention-badge ${p.diasRestantes <= 7 ? 'zero' : 'low'}">${Math.floor(p.diasRestantes)} dia${Math.floor(p.diasRestantes) === 1 ? '' : 's'}</span>
+        </div>`).join('');
     }
 
     // ─── COMPRAS ──────────────────────────────────────────────────────────────────
@@ -6013,6 +6615,9 @@
         try { localStorage.setItem('theme', 'light'); } catch (e) { }
       }
       applyThemeIcon();
+      if (document.getElementById('page-dashboard') && document.getElementById('page-dashboard').classList.contains('active')) {
+        renderAnalyticsCharts(loadSkus(), loadMovs());
+      }
     }
 
     async function initApp() {
