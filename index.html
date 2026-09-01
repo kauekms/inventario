@@ -4591,9 +4591,18 @@
       if (isNaN(novoCusto) || novoCusto < 0) { showToast('warning', 'Campo inválido', 'Informe um custo médio válido.'); return; }
       if (isNaN(novaQty) || novaQty < 0) { showToast('warning', 'Campo inválido', 'Informe uma quantidade válida.'); return; }
       try {
-        await updateRowById('produtos', 'skus', currentProductId,
-          { cost: novoCusto, qty: novaQty },
-          { cost: novoCusto, qty: novaQty });
+        // qty/cost não são mais graváveis direto na tabela produtos pela
+        // chave anon (trava de segurança no banco); essa é a única rota
+        // permitida para redefinir os dois de uma vez, e é auditada.
+        assertSupabase();
+        const { error } = await db.rpc('redefinir_custo_estoque', {
+          p_sku_id: currentProductId,
+          p_novo_custo: novoCusto,
+          p_nova_qty: novaQty
+        });
+        if (error) throw error;
+
+        await loadAllData();
         closeRedefinirCustoModal();
         showToast('success', 'Custo médio redefinido', `Novo custo: ${fmt(novoCusto)} · Quantidade: ${novaQty}`);
         renderProductDetail(); renderKpis(); renderTable(); renderDashboard();
