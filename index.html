@@ -360,6 +360,52 @@
     .quick-search-item .qs-meta { font-size: 11px; color: var(--text-muted); }
     .quick-search-empty { padding: 22px 16px; color: var(--text-muted); font-size: 13px; text-align: center; }
 
+    .login-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: var(--bg);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-overlay.open { display: flex; }
+
+    .login-card {
+      width: min(380px, 92vw);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 28px;
+      box-shadow: var(--modal-shadow, 0 8px 32px rgba(0,0,0,.45));
+    }
+
+    .login-brand {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .login-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .login-erro {
+      background: rgba(248, 113, 113, 0.12);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      color: var(--danger);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      margin-bottom: 14px;
+    }
+
     .avatar {
       width: 30px;
       height: 30px;
@@ -2755,6 +2801,24 @@
 
 <body>
 
+  <div class="login-overlay" id="login-overlay">
+    <form class="login-card" id="login-form" onsubmit="return fazerLogin(event)">
+      <div class="login-brand">🔐 <span>Manage Inventory Pro</span></div>
+      <p class="login-sub">Entre com sua conta para acessar o sistema.</p>
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input class="form-input" id="login-email" type="email" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <input class="form-input" id="login-senha" type="password" autocomplete="current-password" required>
+      </div>
+      <div class="login-erro hidden" id="login-erro"></div>
+      <button class="btn btn-primary" type="submit" id="btn-login" style="width:100%;justify-content:center">Entrar</button>
+    </form>
+  </div>
+
+
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
   <div class="quick-search-overlay" id="quick-search-overlay" onclick="if(event.target===this) closeQuickSearch()">
@@ -2863,6 +2927,12 @@
           </svg>
         </button>
         <div class="avatar">K.B</div>
+        <button class="quick-search-btn" onclick="fazerLogout()" title="Sair da conta">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 5v1a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span>Sair</span>
+        </button>
       </div>
     </div>
 
@@ -4158,6 +4228,48 @@
       if (!supabaseLib) throw new Error('Biblioteca Supabase JS não disponível.');
       db = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       return db;
+    }
+
+    // ─── LOGIN (Supabase Auth) ────────────────────────────────────────────────
+    function mostrarTelaLogin() {
+      document.getElementById('login-overlay').classList.add('open');
+    }
+    function esconderTelaLogin() {
+      document.getElementById('login-overlay').classList.remove('open');
+    }
+    async function fazerLogin(event) {
+      if (event) event.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const senha = document.getElementById('login-senha').value;
+      const erroBox = document.getElementById('login-erro');
+      erroBox.classList.add('hidden');
+      if (!email || !senha) return false;
+
+      setButtonLoading('btn-login', true);
+      try {
+        await setupSupabaseClient();
+        assertSupabase();
+        const { error } = await db.auth.signInWithPassword({ email, password: senha });
+        if (error) throw error;
+        // esconderTelaLogin() e o boot do app acontecem via onAuthStateChange.
+      } catch (err) {
+        erroBox.textContent = err && err.message ? traduzErroLogin(err.message) : 'Não foi possível entrar.';
+        erroBox.classList.remove('hidden');
+      } finally {
+        setButtonLoading('btn-login', false, 'Entrar');
+      }
+      return false;
+    }
+    function traduzErroLogin(msg) {
+      if (/invalid login credentials/i.test(msg)) return 'E-mail ou senha incorretos.';
+      if (/email not confirmed/i.test(msg)) return 'E-mail ainda não confirmado.';
+      return msg;
+    }
+    async function fazerLogout() {
+      try {
+        await setupSupabaseClient();
+        await db.auth.signOut();
+      } catch (err) { console.warn('Erro ao sair:', err); }
     }
 
     const appData = {
@@ -6620,12 +6732,11 @@
       }
     }
 
-    async function initApp() {
-      applyThemeIcon();
-      const dashDate = document.getElementById('dash-date');
-      if (dashDate) {
-        dashDate.textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-      }
+    let appBooted = false;
+    async function bootAppDepoisDoLogin() {
+      if (appBooted) return;
+      appBooted = true;
+      esconderTelaLogin();
 
       // Mostra a interface imediatamente com a página do dashboard, para a
       // tela não ficar em branco enquanto aguarda Supabase/CDN/rede responder.
@@ -6636,13 +6747,44 @@
       document.getElementById('page-dashboard').classList.add('active');
 
       try {
-        await setupSupabaseClient();
         await loadAllData();
       } catch (err) {
         handleAsyncError(err, 'Não foi possível iniciar o sistema.');
       }
 
       restaurarUltimaPagina();
+    }
+
+    async function initApp() {
+      applyThemeIcon();
+      const dashDate = document.getElementById('dash-date');
+      if (dashDate) {
+        dashDate.textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+      }
+
+      try {
+        await setupSupabaseClient();
+        assertSupabase();
+
+        db.auth.onAuthStateChange((event, session) => {
+          if (session) {
+            bootAppDepoisDoLogin();
+          } else {
+            appBooted = false;
+            mostrarTelaLogin();
+          }
+        });
+
+        const { data } = await db.auth.getSession();
+        if (data && data.session) {
+          await bootAppDepoisDoLogin();
+        } else {
+          mostrarTelaLogin();
+        }
+      } catch (err) {
+        handleAsyncError(err, 'Não foi possível iniciar o sistema.');
+        mostrarTelaLogin();
+      }
     }
 
     window.addEventListener('error', function (event) {
