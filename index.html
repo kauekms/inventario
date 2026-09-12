@@ -4453,7 +4453,7 @@
     // Cada tabela busca só as colunas que o app realmente usa (mapXFromDb),
     // em vez de "select *" — menos dado trafegado, resposta mais rápida.
     const TABLE_COLUMNS = {
-      produtos: 'id,name,code,kind,emoji,cost,package_cost,tax,qty,min,ads,sync,anunciado,super,created_at,updated_at',
+      produtos: 'id,name,code,kind,emoji,cost,package_cost,tax,qty,min,ads,sync,anunciado,super,barcode,created_at,updated_at',
       movimentacoes: 'id,sku_id,sku_name,type,qty,cost,note,notes,previous_qty,qty_after,previous_cost,average_cost_after,date,created_at',
       compras: 'id,sku,compra_nome,compra_link,cat_nome,cat_link,qty,preco,total,cartao_id,conta_id,parcelas,venda,margem,roi,date,created_at',
       cartoes: 'id,nome,digitos,limite,utilizado,created_at,updated_at',
