@@ -3559,7 +3559,7 @@
           </div>
         </div>
 
-        <div class="detail-cards" style="grid-template-columns: repeat(2, 1fr); max-width: 540px;">
+        <div class="detail-cards" style="grid-template-columns: repeat(3, 1fr); max-width: 820px;">
           <div class="detail-card">
             <div class="detail-card-label"><span>Custo Médio ⓘ</span><span>$</span></div>
             <div class="detail-card-value" id="detail-average-cost">R$ 0,00</div>
@@ -3569,6 +3569,19 @@
             <div class="detail-card-value" id="detail-avg-purchase-cost">R$ 0,00</div>
             <div class="entrada-card-sku" id="detail-avg-purchase-sub" style="margin-top:6px">Sem entradas registradas
             </div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-label">
+              <span>Código de Barras</span>
+              <button type="button" title="Editar código de barras" onclick="openEditProductModal()"
+                style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z" />
+                </svg>
+              </button>
+            </div>
+            <div class="detail-card-value" id="detail-barcode" style="font-size:18px">—</div>
           </div>
         </div>
 
@@ -3652,6 +3665,15 @@
       <div class="form-group">
         <label class="form-label">SKU</label>
         <input class="form-input" id="cad-sku" placeholder="Ex: PROD-001" type="text">
+      </div>
+      <div class="form-group">
+        <div class="check-card" style="cursor:default;align-items:stretch">
+          <div style="flex:1">
+            <label class="form-label" style="margin-top:0">Código de Barras <span style="color:var(--danger)">*</span></label>
+            <input class="form-input" id="cad-barcode" placeholder="Ex: 7891234567890" type="text" inputmode="numeric">
+            <span style="display:block;margin-top:6px">Obrigatório no cadastro. Pode ser alterado depois pelo botão de editar.</span>
+          </div>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Tipo do produto</label>
@@ -4027,6 +4049,8 @@
           type="text"></div>
       <div class="form-group"><label class="form-label">SKU</label><input class="form-input" id="edit-prod-sku"
           type="text"></div>
+      <div class="form-group"><label class="form-label">Código de Barras</label><input class="form-input"
+          id="edit-prod-barcode" placeholder="Ex: 7891234567890" type="text" inputmode="numeric"></div>
       <div class="form-group">
         <label class="form-label">Tipo</label>
         <div class="checkbox-grid">
@@ -4328,7 +4352,7 @@
         id: r.id, name: cleanText(r.name), code: cleanText(r.code), kind: cleanText(r.kind, 'unitario'),
         emoji: cleanText(r.emoji, '📦'), cost: n(r.cost), packageCost: n(r.package_cost),
         tax: cleanText(r.tax, 'Padrão da conta'), qty: i(r.qty), min: i(r.min, 5), ads: n(r.ads),
-        sync: Boolean(r.sync), anunciado: Boolean(r.anunciado), super: Boolean(r.super), createdAt: r.created_at, updatedAt: r.updated_at
+        sync: Boolean(r.sync), anunciado: Boolean(r.anunciado), super: Boolean(r.super), barcode: cleanText(r.barcode), createdAt: r.created_at, updatedAt: r.updated_at
       };
     }
     function mapSkuToDb(s) {
@@ -4336,7 +4360,8 @@
         id: s.id || makeId(), name: cleanText(s.name), code: cleanText(s.code),
         kind: s.kind === 'kit' ? 'kit' : 'unitario', emoji: cleanText(s.emoji, s.kind === 'kit' ? '🧩' : '📦'),
         cost: n(s.cost), package_cost: n(s.packageCost), tax: cleanText(s.tax, 'Padrão da conta'),
-        qty: i(s.qty), min: i(s.min, 5), ads: n(s.ads), sync: Boolean(s.sync), anunciado: Boolean(s.anunciado), super: Boolean(s.super)
+        qty: i(s.qty), min: i(s.min, 5), ads: n(s.ads), sync: Boolean(s.sync), anunciado: Boolean(s.anunciado), super: Boolean(s.super),
+        barcode: cleanText(s.barcode)
       };
     }
     function mapKitComponenteFromDb(r) {
@@ -4794,19 +4819,22 @@
     // ─── PRODUTOS & ESTOQUE (MANTIDO COMPACTO) ──────────────────────────────────
     function openCadastroProdutoModal() { clearCadastroForm(); openModal('cadastro-produto'); }
     function selectProductKind(kind) { productKind = kind; const isUnit = kind === 'unitario'; document.getElementById('cad-unitario').checked = isUnit; document.getElementById('cad-kit').checked = !isUnit; document.getElementById('card-unitario').classList.toggle('selected', isUnit); document.getElementById('card-kit').classList.toggle('selected', !isUnit); }
-    function clearCadastroForm() { document.getElementById('cad-name').value = ''; document.getElementById('cad-sku').value = ''; selectProductKind('unitario'); }
+    function clearCadastroForm() { document.getElementById('cad-name').value = ''; document.getElementById('cad-sku').value = ''; document.getElementById('cad-barcode').value = ''; selectProductKind('unitario'); }
     async function saveCadastroProduto() {
       const name = document.getElementById('cad-name').value.trim();
       const code = document.getElementById('cad-sku').value.trim();
+      const barcode = document.getElementById('cad-barcode').value.trim();
       if (!name || !code) { showToast('warning', 'Campo obrigatório', 'Nome e SKU são obrigatórios.'); return; }
+      if (!barcode) { showToast('warning', 'Campo obrigatório', 'O código de barras é obrigatório no cadastro.'); return; }
       const skus = loadSkus();
       if (skus.find(s => (s.code || '').toLowerCase() === code.toLowerCase())) { showToast('error', 'SKU duplicado', 'Já existe um produto com este SKU.'); return; }
+      if (skus.find(s => (s.barcode || '') && s.barcode.toLowerCase() === barcode.toLowerCase())) { showToast('error', 'Código de barras duplicado', 'Já existe um produto com este código de barras.'); return; }
 
       const newId = makeId();
       const novoProduto = {
         id: newId, name, code, kind: productKind, emoji: productKind === 'kit' ? '🧩' : '📦',
         cost: 0, packageCost: 0, tax: 'Padrão da conta', qty: 0, min: 5, ads: 0,
-        sync: false, createdAt: new Date().toISOString()
+        sync: false, barcode, createdAt: new Date().toISOString()
       };
 
       try {
@@ -4821,7 +4849,7 @@
     }
     const bagIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>';
     const cartIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>';
-    function renderTable() { const skus = loadSkus(); const q = document.getElementById('search-input').value.toLowerCase(); const qtyFilterEl = document.getElementById('filter-qty'); const minQty = qtyFilterEl ? parseInt(qtyFilterEl.value, 10) : NaN; const superF = document.getElementById('filter-super') ? document.getElementById('filter-super').value : 'ambos'; const anuncioF = document.getElementById('filter-anunciado') ? document.getElementById('filter-anunciado').value : 'todos'; const filtered = skus.filter(s => { const match = s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q); if (!match) return false; if (!isNaN(minQty) && s.qty < minQty) return false; if (superF === 'super' && !s.super) return false; if (superF === 'normal' && s.super) return false; if (anuncioF === 'anunciado' && !s.anunciado) return false; if (anuncioF === 'nao' && s.anunciado) return false; return true; }); const body = document.getElementById('table-body'); if (filtered.length === 0) { body.innerHTML = `<div class="empty-state"><p>Nenhum produto encontrado.</p></div>`; return; } const movs = loadMovs(); body.innerHTML = filtered.map(s => { const cls = s.qty === 0 ? 'stock-zero' : s.qty <= s.min ? 'stock-low' : 'stock-ok'; const total = s.qty * s.cost; const lastMov = movs.find(m => idsMatch(m.skuId, s.id)); const lastDate = lastMov ? fmtDate(lastMov.date) : '—'; return ` <div class="table-row"> <div></div> <div class="product-cell"> <div class="product-img">${s.emoji}</div> <div> <button class="product-link" onclick="openProductDetail('${s.id}')">${s.name}</button> <span class="product-sku">${s.code}</span> </div> </div> <div><div class="stock-val ${cls}">${s.qty}</div><div class="stock-unit">unidades</div></div> <div class="cell-muted">${fmt(s.cost)}</div> <div class="cell-muted">${fmt(total)}</div> <div class="cell-muted">${lastDate}</div> <div class="actions-cell"> <button class="mini-view-btn" onclick="openProductDetail('${s.id}')">Ver</button> <button class="mini-cart-btn ${s.super ? 'active' : ''}" title="${s.super ? 'Remover supermercado' : 'Marcar como supermercado'}" onclick="toggleSupermercado('${s.id}', event)">${cartIconSvg}</button> <button class="mini-bag-btn ${s.anunciado ? 'active' : ''}" title="${s.anunciado ? 'Remover anúncio' : 'Marcar como anunciado'}" onclick="toggleAnunciado('${s.id}', event)">${bagIconSvg}</button> </div> </div>`; }).join(''); }
+    function renderTable() { const skus = loadSkus(); const q = document.getElementById('search-input').value.toLowerCase(); const qtyFilterEl = document.getElementById('filter-qty'); const minQty = qtyFilterEl ? parseInt(qtyFilterEl.value, 10) : NaN; const superF = document.getElementById('filter-super') ? document.getElementById('filter-super').value : 'ambos'; const anuncioF = document.getElementById('filter-anunciado') ? document.getElementById('filter-anunciado').value : 'todos'; const filtered = skus.filter(s => { const match = s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q) || (s.barcode || '').toLowerCase().includes(q); if (!match) return false; if (!isNaN(minQty) && s.qty < minQty) return false; if (superF === 'super' && !s.super) return false; if (superF === 'normal' && s.super) return false; if (anuncioF === 'anunciado' && !s.anunciado) return false; if (anuncioF === 'nao' && s.anunciado) return false; return true; }); const body = document.getElementById('table-body'); if (filtered.length === 0) { body.innerHTML = `<div class="empty-state"><p>Nenhum produto encontrado.</p></div>`; return; } const movs = loadMovs(); body.innerHTML = filtered.map(s => { const cls = s.qty === 0 ? 'stock-zero' : s.qty <= s.min ? 'stock-low' : 'stock-ok'; const total = s.qty * s.cost; const lastMov = movs.find(m => idsMatch(m.skuId, s.id)); const lastDate = lastMov ? fmtDate(lastMov.date) : '—'; return ` <div class="table-row"> <div></div> <div class="product-cell"> <div class="product-img">${s.emoji}</div> <div> <button class="product-link" onclick="openProductDetail('${s.id}')">${s.name}</button> <span class="product-sku">${s.code}</span> </div> </div> <div><div class="stock-val ${cls}">${s.qty}</div><div class="stock-unit">unidades</div></div> <div class="cell-muted">${fmt(s.cost)}</div> <div class="cell-muted">${fmt(total)}</div> <div class="cell-muted">${lastDate}</div> <div class="actions-cell"> <button class="mini-view-btn" onclick="openProductDetail('${s.id}')">Ver</button> <button class="mini-cart-btn ${s.super ? 'active' : ''}" title="${s.super ? 'Remover supermercado' : 'Marcar como supermercado'}" onclick="toggleSupermercado('${s.id}', event)">${cartIconSvg}</button> <button class="mini-bag-btn ${s.anunciado ? 'active' : ''}" title="${s.anunciado ? 'Remover anúncio' : 'Marcar como anunciado'}" onclick="toggleAnunciado('${s.id}', event)">${bagIconSvg}</button> </div> </div>`; }).join(''); }
     function openProductDetail(skuId) { currentProductId = skuId; detailMovFilter = 'todos'; navigate('produto-detalhe'); }
     function idsMatch(a, b) { return String(a) === String(b); }
     function getCurrentSku() { const skus = loadSkus(); let sku = skus.find(s => idsMatch(s.id, currentProductId)); if (sku) return sku; const detailSkuEl = document.getElementById('detail-sku'); const codeOnScreen = detailSkuEl ? detailSkuEl.textContent.trim() : ''; sku = skus.find(s => (s.code || '').trim() === codeOnScreen); if (sku) { currentProductId = sku.id; return sku; } return null; }
@@ -4977,7 +5005,7 @@
       </div>`;
       }).join('');
     }
-    function renderProductDetail() { const sku = getCurrentSku(); if (!sku) { navigate('estoque'); return; } const movs = loadMovs().filter(m => idsMatch(m.skuId, sku.id)); const entradas = movs.filter(m => m.type === 'entrada'); const saidas = movs.filter(m => m.type === 'saida'); const stockValue = sku.qty * sku.cost; document.getElementById('detail-emoji').textContent = sku.emoji || '📦'; document.getElementById('detail-name').textContent = sku.name; document.getElementById('detail-sku').textContent = sku.code; document.getElementById('detail-created').textContent = fmtOnlyDate(sku.createdAt); document.getElementById('detail-kind').textContent = (sku.kind === 'kit') ? 'KIT' : 'Unitário'; document.getElementById('detail-qty-pill').textContent = `${sku.qty} unidades`; document.getElementById('detail-stock-value-pill').textContent = `${fmt(stockValue)} em estoque`; const anunciadoPill = document.getElementById('detail-anunciado-pill'); anunciadoPill.style.display = sku.anunciado ? '' : 'none'; document.getElementById('detail-average-cost').textContent = fmt(sku.cost || 0); const avgPurchaseCost = computeAverageCost(entradas); document.getElementById('detail-avg-purchase-cost').textContent = fmt(avgPurchaseCost); const avgSub = document.getElementById('detail-avg-purchase-sub'); if (!entradas.length) { avgSub.textContent = 'Sem entradas registradas'; } else { const diff = (sku.cost || 0) - avgPurchaseCost; const diffTxt = diff > 0.005 ? ` · ${fmt(Math.abs(diff))} acima do custo atual` : diff < -0.005 ? ` · ${fmt(Math.abs(diff))} abaixo do custo atual` : ' · igual ao custo atual'; avgSub.textContent = `Baseado em ${entradas.length} entrada${entradas.length === 1 ? '' : 's'}${diffTxt}`; } document.getElementById('filter-todos').textContent = `Todos (${movs.length})`; document.getElementById('filter-entrada').textContent = `Entradas (${entradas.length})`; document.getElementById('filter-saida').textContent = `Saídas (${saidas.length})`; document.getElementById('filter-todos').classList.toggle('active', detailMovFilter === 'todos'); document.getElementById('filter-entrada').classList.toggle('active', detailMovFilter === 'entrada'); document.getElementById('filter-saida').classList.toggle('active', detailMovFilter === 'saida'); renderDetailMovements(movs); renderDetailCosts(entradas); const isKit = sku.kind === 'kit'; document.getElementById('tab-kit').classList.toggle('hidden', !isKit); document.getElementById('btn-montar-kit').style.display = isKit ? '' : 'none'; if (isKit) renderKitComponentesTab(sku); else if (document.getElementById('tab-kit').classList.contains('active')) selectDetailTab('movs'); }
+    function renderProductDetail() { const sku = getCurrentSku(); if (!sku) { navigate('estoque'); return; } const movs = loadMovs().filter(m => idsMatch(m.skuId, sku.id)); const entradas = movs.filter(m => m.type === 'entrada'); const saidas = movs.filter(m => m.type === 'saida'); const stockValue = sku.qty * sku.cost; document.getElementById('detail-emoji').textContent = sku.emoji || '📦'; document.getElementById('detail-name').textContent = sku.name; document.getElementById('detail-sku').textContent = sku.code; document.getElementById('detail-barcode').textContent = sku.barcode || '—'; document.getElementById('detail-created').textContent = fmtOnlyDate(sku.createdAt); document.getElementById('detail-kind').textContent = (sku.kind === 'kit') ? 'KIT' : 'Unitário'; document.getElementById('detail-qty-pill').textContent = `${sku.qty} unidades`; document.getElementById('detail-stock-value-pill').textContent = `${fmt(stockValue)} em estoque`; const anunciadoPill = document.getElementById('detail-anunciado-pill'); anunciadoPill.style.display = sku.anunciado ? '' : 'none'; document.getElementById('detail-average-cost').textContent = fmt(sku.cost || 0); const avgPurchaseCost = computeAverageCost(entradas); document.getElementById('detail-avg-purchase-cost').textContent = fmt(avgPurchaseCost); const avgSub = document.getElementById('detail-avg-purchase-sub'); if (!entradas.length) { avgSub.textContent = 'Sem entradas registradas'; } else { const diff = (sku.cost || 0) - avgPurchaseCost; const diffTxt = diff > 0.005 ? ` · ${fmt(Math.abs(diff))} acima do custo atual` : diff < -0.005 ? ` · ${fmt(Math.abs(diff))} abaixo do custo atual` : ' · igual ao custo atual'; avgSub.textContent = `Baseado em ${entradas.length} entrada${entradas.length === 1 ? '' : 's'}${diffTxt}`; } document.getElementById('filter-todos').textContent = `Todos (${movs.length})`; document.getElementById('filter-entrada').textContent = `Entradas (${entradas.length})`; document.getElementById('filter-saida').textContent = `Saídas (${saidas.length})`; document.getElementById('filter-todos').classList.toggle('active', detailMovFilter === 'todos'); document.getElementById('filter-entrada').classList.toggle('active', detailMovFilter === 'entrada'); document.getElementById('filter-saida').classList.toggle('active', detailMovFilter === 'saida'); renderDetailMovements(movs); renderDetailCosts(entradas); const isKit = sku.kind === 'kit'; document.getElementById('tab-kit').classList.toggle('hidden', !isKit); document.getElementById('btn-montar-kit').style.display = isKit ? '' : 'none'; if (isKit) renderKitComponentesTab(sku); else if (document.getElementById('tab-kit').classList.contains('active')) selectDetailTab('movs'); }
     function calcularCapacidadeKit(kitId) {
       const componentes = loadKitComponentes().filter(c => idsMatch(c.kitId, kitId));
       if (!componentes.length) return { capacidade: 0, componentes: [] };
@@ -5105,7 +5133,7 @@
     function renderDetailMovements(movs) { const box = document.getElementById('detail-movements-box'); const filtered = movs.filter(m => detailMovFilter === 'todos' ? true : m.type === detailMovFilter); if (filtered.length === 0) { box.classList.remove('has-items'); box.textContent = 'Nenhuma movimentação registrada'; return; } box.classList.add('has-items'); box.innerHTML = filtered.map(m => { const isEntrada = m.type === 'entrada'; const metaParts = [fmtDate(m.date)]; if (isEntrada) metaParts.push('Entrada de estoque'); else metaParts.push('Saída de estoque'); if (m.note && m.note !== 'Entrada de estoque' && m.note !== 'Saída de estoque') metaParts.push(m.note); if (m.notes) metaParts.push(m.notes); if (m.qtyAfter !== undefined) metaParts.push(`Estoque após: ${m.qtyAfter} un`); if (isEntrada && m.cost) metaParts.push(`Custo p/ Unid: ${fmt(m.cost)}`); return ` <div class="detail-mov-row"> <div class="mov-badge ${isEntrada ? 'in' : 'out'}">${isEntrada ? '📦' : '🚚'}</div> <div class="detail-mov-info"> <strong>${isEntrada ? 'Entrada' : 'Saída'} de ${m.qty} unidade${m.qty === 1 ? '' : 's'}</strong> <span>${metaParts.join(' · ')}</span> </div> <div style="text-align:right"> <div class="mov-qty ${isEntrada ? 'in' : 'out'}">${isEntrada ? '+' : '-'}${m.qty}</div> </div> </div>`; }).join(''); }
     function renderDetailCosts(entradas) { const box = document.getElementById('detail-costs-box'); if (!entradas.length) { box.classList.remove('has-items'); box.textContent = 'Nenhum histórico de custo registrado'; return; } box.classList.add('has-items'); box.innerHTML = entradas.map(m => { const prevCost = m.previousCost !== undefined ? m.previousCost : null; const costChanged = prevCost !== null && prevCost !== m.cost; return ` <div class="detail-mov-row"> <div class="mov-badge in">$</div> <div class="detail-mov-info"> <strong>${fmt(m.cost || 0)} / unidade${costChanged ? ' ↑' : ''}</strong> <span>${fmtDate(m.date)} · ${m.qty} unidade${m.qty === 1 ? '' : 's'} entrada</span> </div> <div style="text-align:right;font-size:12px;color:var(--text-muted)">${costChanged ? fmt(prevCost) + ' → ' + fmt(m.cost) : fmt(m.cost)}</div> </div>`; }).join(''); }
     function selectEditProductKind(kind) { editProductKind = kind; const isUnit = kind === 'unitario'; document.getElementById('edit-prod-unitario').checked = isUnit; document.getElementById('edit-prod-kit').checked = !isUnit; document.getElementById('edit-card-unitario').classList.toggle('selected', isUnit); document.getElementById('edit-card-kit').classList.toggle('selected', !isUnit); }
-    function openEditProductModal() { const sku = getCurrentSku(); if (!sku) return; document.getElementById('edit-prod-name').value = sku.name || ''; document.getElementById('edit-prod-sku').value = sku.code || ''; selectEditProductKind(sku.kind === 'kit' ? 'kit' : 'unitario'); openModal('edit-product'); }
+    function openEditProductModal() { const sku = getCurrentSku(); if (!sku) return; document.getElementById('edit-prod-name').value = sku.name || ''; document.getElementById('edit-prod-sku').value = sku.code || ''; document.getElementById('edit-prod-barcode').value = sku.barcode || ''; selectEditProductKind(sku.kind === 'kit' ? 'kit' : 'unitario'); openModal('edit-product'); }
     function closeEditProductModal() { closeModal('edit-product'); }
     function openRedefinirCustoModal() {
       const sku = getCurrentSku();
@@ -5143,19 +5171,23 @@
     async function saveEditedProduct() {
       const name = document.getElementById('edit-prod-name').value.trim();
       const code = document.getElementById('edit-prod-sku').value.trim();
+      const barcode = document.getElementById('edit-prod-barcode').value.trim();
       if (!name || !code) { showToast('warning', 'Campo obrigatório', 'Nome e SKU são obrigatórios.'); return; }
+      if (!barcode) { showToast('warning', 'Campo obrigatório', 'O código de barras é obrigatório.'); return; }
       const skus = loadSkus();
       const idx = skus.findIndex(s => idsMatch(s.id, currentProductId));
       if (idx === -1) { showToast('error', 'Erro', 'Produto não encontrado.'); return; }
       const dup = skus.find(s => !idsMatch(s.id, currentProductId) && (s.code || '').toLowerCase() === code.toLowerCase());
       if (dup) { showToast('error', 'SKU duplicado', 'Já existe outro produto com este SKU.'); return; }
+      const dupBarcode = skus.find(s => !idsMatch(s.id, currentProductId) && (s.barcode || '') && s.barcode.toLowerCase() === barcode.toLowerCase());
+      if (dupBarcode) { showToast('error', 'Código de barras duplicado', 'Já existe outro produto com este código de barras.'); return; }
 
       const emoji = editProductKind === 'kit' ? '🧩' : (skus[idx].emoji || '📦');
 
       try {
         await updateRowById('produtos', 'skus', currentProductId,
-          { name, code, kind: editProductKind, emoji },
-          { name, code, kind: editProductKind, emoji });
+          { name, code, kind: editProductKind, emoji, barcode },
+          { name, code, kind: editProductKind, emoji, barcode });
 
         // Atualiza o nome do SKU nas movimentações já registradas, direto no
         // banco (update pontual), sem reenviar a tabela inteira.
