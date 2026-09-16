@@ -3326,6 +3326,13 @@
             <p>Gerencie seus SKUs e controle de estoque</p>
           </div>
           <div class="page-actions">
+            <button class="btn btn-ghost" onclick="exportEstoqueCSV()">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+              </svg>
+              Exportar CSV
+            </button>
             <button class="btn btn-primary" onclick="openCadastroProdutoModal()">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -4850,6 +4857,48 @@
     const bagIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>';
     const cartIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>';
     function renderTable() { const skus = loadSkus(); const q = document.getElementById('search-input').value.toLowerCase(); const qtyFilterEl = document.getElementById('filter-qty'); const minQty = qtyFilterEl ? parseInt(qtyFilterEl.value, 10) : NaN; const superF = document.getElementById('filter-super') ? document.getElementById('filter-super').value : 'ambos'; const anuncioF = document.getElementById('filter-anunciado') ? document.getElementById('filter-anunciado').value : 'todos'; const filtered = skus.filter(s => { const match = s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q) || (s.barcode || '').toLowerCase().includes(q); if (!match) return false; if (!isNaN(minQty) && s.qty < minQty) return false; if (superF === 'super' && !s.super) return false; if (superF === 'normal' && s.super) return false; if (anuncioF === 'anunciado' && !s.anunciado) return false; if (anuncioF === 'nao' && s.anunciado) return false; return true; }); const body = document.getElementById('table-body'); if (filtered.length === 0) { body.innerHTML = `<div class="empty-state"><p>Nenhum produto encontrado.</p></div>`; return; } const movs = loadMovs(); body.innerHTML = filtered.map(s => { const cls = s.qty === 0 ? 'stock-zero' : s.qty <= s.min ? 'stock-low' : 'stock-ok'; const total = s.qty * s.cost; const lastMov = movs.find(m => idsMatch(m.skuId, s.id)); const lastDate = lastMov ? fmtDate(lastMov.date) : '—'; return ` <div class="table-row"> <div></div> <div class="product-cell"> <div class="product-img">${s.emoji}</div> <div> <button class="product-link" onclick="openProductDetail('${s.id}')">${s.name}</button> <span class="product-sku">${s.code}</span> </div> </div> <div><div class="stock-val ${cls}">${s.qty}</div><div class="stock-unit">unidades</div></div> <div class="cell-muted">${fmt(s.cost)}</div> <div class="cell-muted">${fmt(total)}</div> <div class="cell-muted">${lastDate}</div> <div class="actions-cell"> <button class="mini-view-btn" onclick="openProductDetail('${s.id}')">Ver</button> <button class="mini-cart-btn ${s.super ? 'active' : ''}" title="${s.super ? 'Remover supermercado' : 'Marcar como supermercado'}" onclick="toggleSupermercado('${s.id}', event)">${cartIconSvg}</button> <button class="mini-bag-btn ${s.anunciado ? 'active' : ''}" title="${s.anunciado ? 'Remover anúncio' : 'Marcar como anunciado'}" onclick="toggleAnunciado('${s.id}', event)">${bagIconSvg}</button> </div> </div>`; }).join(''); }
+    function getEstoqueFilteredSkus() {
+      const skus = loadSkus();
+      const searchEl = document.getElementById('search-input');
+      const q = (searchEl ? searchEl.value : '').toLowerCase();
+      const qtyFilterEl = document.getElementById('filter-qty');
+      const minQty = qtyFilterEl ? parseInt(qtyFilterEl.value, 10) : NaN;
+      const superF = document.getElementById('filter-super') ? document.getElementById('filter-super').value : 'ambos';
+      const anuncioF = document.getElementById('filter-anunciado') ? document.getElementById('filter-anunciado').value : 'todos';
+      return skus.filter(s => {
+        const match = s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q) || (s.barcode || '').toLowerCase().includes(q);
+        if (!match) return false;
+        if (!isNaN(minQty) && s.qty < minQty) return false;
+        if (superF === 'super' && !s.super) return false;
+        if (superF === 'normal' && s.super) return false;
+        if (anuncioF === 'anunciado' && !s.anunciado) return false;
+        if (anuncioF === 'nao' && s.anunciado) return false;
+        return true;
+      });
+    }
+    function csvEscapeField(value) {
+      const str = String(value === undefined || value === null ? '' : value);
+      if (/["\n;]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
+      return str;
+    }
+    function exportEstoqueCSV() {
+      const skus = getEstoqueFilteredSkus();
+      if (!skus.length) { showToast('warning', 'Nada para exportar', 'Nenhum produto encontrado com os filtros atuais.'); return; }
+      const header = ['SKU', 'Descrição', 'Unidades em Estoque'];
+      const rows = skus.map(s => [s.code || '', s.name || '', s.qty || 0]);
+      const csvContent = [header, ...rows].map(r => r.map(csvEscapeField).join(';')).join('\r\n');
+      const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `estoque_${dateStr}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('success', 'Exportado', `${skus.length} produto${skus.length === 1 ? '' : 's'} exportado${skus.length === 1 ? '' : 's'} para CSV.`);
+    }
     function openProductDetail(skuId) { currentProductId = skuId; detailMovFilter = 'todos'; navigate('produto-detalhe'); }
     function idsMatch(a, b) { return String(a) === String(b); }
     function getCurrentSku() { const skus = loadSkus(); let sku = skus.find(s => idsMatch(s.id, currentProductId)); if (sku) return sku; const detailSkuEl = document.getElementById('detail-sku'); const codeOnScreen = detailSkuEl ? detailSkuEl.textContent.trim() : ''; sku = skus.find(s => (s.code || '').trim() === codeOnScreen); if (sku) { currentProductId = sku.id; return sku; } return null; }
