@@ -17,29 +17,48 @@
     }
 
     :root {
-      --bg: #0b0b0c;
-      --surface: #151516;
-      --surface2: #202124;
-      --border: #34363a;
-      --accent: #7c9cff;
-      --accent-dim: rgba(124, 156, 255, 0.16);
-      --text: #f1f1f2;
-      --text-muted: #a1a1aa;
-      --text-dim: #6b7280;
+      --bg: #08080b;
+      --surface: #17171b;
+      --surface2: #212127;
+      --border: #313138;
+      --accent: #7C6CFB;
+      --accent-2: #B96CFB;
+      --accent-dim: rgba(124, 108, 251, 0.16);
+      --text: #f4f4f6;
+      --text-muted: #a3a3ae;
+      --text-dim: #6f6f7c;
       --green: #34d399;
       --danger: #f87171;
       --blue: #38bdf8;
       --yellow: #fbbf24;
-      --sidebar-w: 220px;
-      --btn-primary-bg: var(--accent);
-      --btn-primary-bg-hover: #93aeff;
-      --btn-primary-text: #0b0d17;
-      --hover-strong: #28282d;
+      --sidebar-w: 236px;
+      --gap: 12px;
+      --btn-primary-bg: linear-gradient(135deg, var(--accent), var(--accent-2));
+      --btn-primary-bg-hover: linear-gradient(135deg, #8d7dff, #c67dff);
+      --btn-primary-text: #ffffff;
+      --hover-strong: #2a2a31;
+      --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+      --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
     }
 
     body {
       font-family: 'Inter', sans-serif;
-      background: var(--bg);
+      background:
+        radial-gradient(880px 520px at 100% -8%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
+        radial-gradient(760px 480px at -8% 100%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 60%),
+        var(--bg);
+      background-attachment: fixed;
       color: var(--text);
       display: flex;
       min-height: 100vh;
@@ -53,6 +72,8 @@
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
       z-index: 90;
     }
 
@@ -126,14 +147,15 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 9px 10px;
-      border-radius: 8px;
+      padding: 9px 12px;
+      border-radius: 10px;
       cursor: pointer;
       color: var(--text-muted);
       font-weight: 500;
-      transition: all 0.15s;
+      transition: background-color 150ms ease, color 150ms ease;
       text-decoration: none;
       position: relative;
+      margin-bottom: 2px;
     }
 
     .nav-item:hover {
@@ -142,8 +164,27 @@
     }
 
     .nav-item.active {
-      background: rgba(156, 163, 175, 0.16);
+      background: color-mix(in srgb, var(--accent) 16%, transparent);
       color: var(--accent);
+      font-weight: 600;
+    }
+
+    .nav-item::after {
+      content: '';
+      position: absolute;
+      left: -8px;
+      top: 50%;
+      width: 3px;
+      height: 16px;
+      border-radius: 999px;
+      background: var(--accent);
+      transform: translateY(-50%) scaleY(0);
+      transition: transform 160ms var(--ease-out);
+      pointer-events: none;
+    }
+
+    .nav-item.active::after {
+      transform: translateY(-50%) scaleY(1);
     }
 
     .nav-item svg {
@@ -185,16 +226,26 @@
     }
 
     .topbar {
-      height: 52px;
+      height: 56px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       padding: 0 16px;
       gap: 12px;
       background: var(--surface);
+      background: color-mix(in srgb, var(--surface) 78%, transparent);
+      backdrop-filter: blur(14px) saturate(160%);
+      -webkit-backdrop-filter: blur(14px) saturate(160%);
       position: sticky;
       top: 0;
       z-index: 50;
+    }
+
+    @media (min-width: 1024px) {
+      .topbar {
+        border: 1px solid var(--border);
+        margin-right: var(--gap);
+      }
     }
 
     .hamburger-btn {
@@ -209,7 +260,11 @@
       cursor: pointer;
       color: var(--text-muted);
       flex-shrink: 0;
-      transition: all 0.15s;
+      transition: background-color 150ms ease, color 150ms ease, transform 160ms var(--ease-out);
+    }
+
+    .hamburger-btn:active {
+      transform: scale(0.94);
     }
 
     .hamburger-btn:hover {
@@ -229,7 +284,11 @@
       cursor: pointer;
       color: var(--text-muted);
       flex-shrink: 0;
-      transition: all 0.15s;
+      transition: background-color 150ms ease, color 150ms ease, transform 160ms var(--ease-out);
+    }
+
+    .theme-toggle-btn:active {
+      transform: scale(0.94);
     }
 
     .theme-toggle-btn:hover {
@@ -452,14 +511,18 @@
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      padding: 8px 16px;
-      border-radius: 8px;
+      padding: 9px 18px;
+      border-radius: 999px;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
       border: none;
-      transition: all 0.15s;
+      transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, transform 160ms var(--ease-out), box-shadow 150ms ease;
       font-family: inherit;
+    }
+
+    .btn-primary {
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
     }
 
     .btn svg {
@@ -499,16 +562,66 @@
     /* ── KPI CARDS ── */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
       gap: 14px;
       margin-bottom: 22px;
+    }
+
+    .kpi-grid-3 {
+      grid-template-columns: repeat(3, minmax(160px, 1fr));
     }
 
     .kpi-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       padding: 18px 20px;
+      min-width: 0;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: cardEnter 320ms var(--ease-out) forwards;
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 2px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .kpi-card:hover::before {
+      opacity: .55;
+    }
+
+    .kpi-card.success::before { background: var(--green); }
+    .kpi-card.critical::before { background: var(--danger); }
+    .kpi-card.warning::before { background: var(--yellow); }
+
+    .kpi-grid .kpi-card:nth-child(1) { animation-delay: 0ms; }
+    .kpi-grid .kpi-card:nth-child(2) { animation-delay: 40ms; }
+    .kpi-grid .kpi-card:nth-child(3) { animation-delay: 80ms; }
+    .kpi-grid .kpi-card:nth-child(4) { animation-delay: 120ms; }
+    .kpi-grid .kpi-card:nth-child(5) { animation-delay: 160ms; }
+    .kpi-grid .kpi-card:nth-child(6) { animation-delay: 200ms; }
+
+    @keyframes cardEnter {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .kpi-card {
+        animation: none;
+        opacity: 1;
+        transform: none;
+      }
     }
 
     .kpi-label {
@@ -525,6 +638,7 @@
       font-size: 24px;
       font-weight: 700;
       letter-spacing: -0.5px;
+      overflow-wrap: break-word;
     }
 
     .kpi-sub {
@@ -539,6 +653,27 @@
       padding: 2px 7px;
       border-radius: 5px;
     }
+
+    .kpi-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent-dim);
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .kpi-icon svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .kpi-icon.success { background: rgba(87, 209, 139, .14); color: var(--green); }
+    .kpi-icon.critical { background: rgba(255, 122, 122, .14); color: var(--danger); }
+    .kpi-icon.warning { background: rgba(240, 199, 106, .16); color: var(--yellow); }
 
     .badge-green {
       background: rgba(199, 199, 199, 0.14);
@@ -640,7 +775,7 @@
     .table-wrap {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       overflow-x: auto;
     }
 
@@ -853,7 +988,11 @@
       justify-content: center;
       cursor: pointer;
       color: var(--text-muted);
-      transition: all 0.13s;
+      transition: background-color 130ms ease, color 130ms ease, transform 130ms var(--ease-out);
+    }
+
+    .icon-btn:active {
+      transform: scale(0.93);
     }
 
     .icon-btn:hover {
@@ -887,7 +1026,7 @@
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: background-color 150ms ease, color 150ms ease;
     }
 
     .sub-tab.active {
@@ -907,7 +1046,22 @@
       z-index: 200;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s;
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      transition: opacity 200ms ease-out;
+    }
+
+    @media (prefers-reduced-transparency: reduce) {
+      .topbar {
+        background: var(--surface) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+
+      .modal-overlay {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
     }
 
     .modal-overlay.open {
@@ -918,18 +1072,20 @@
     .modal {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: var(--radius-lg);
       width: 480px;
       max-width: 95vw;
       padding: 28px;
-      transform: translateY(12px);
-      transition: transform 0.2s;
+      transform: translateY(12px) scale(0.97);
+      opacity: 0;
+      transition: transform 200ms var(--ease-out), opacity 200ms ease-out;
       max-height: 90vh;
       overflow-y: auto;
     }
 
     .modal-overlay.open .modal {
-      transform: translateY(0);
+      transform: translateY(0) scale(1);
+      opacity: 1;
     }
 
     .modal-header {
@@ -1305,7 +1461,7 @@
       border-radius: 12px;
       background: var(--surface2);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: border-color 150ms ease, background-color 150ms ease;
     }
 
     .check-card:hover {
@@ -1543,7 +1699,7 @@
     .detail-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius-md);
       padding: 22px 24px;
       min-height: 110px;
     }
@@ -1828,16 +1984,96 @@
     .credit-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: var(--radius-md);
       padding: 20px 22px;
       position: relative;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: cardEnter 320ms var(--ease-out) forwards;
+    }
+
+    .cards-grid .credit-card:nth-child(1) { animation-delay: 0ms; }
+    .cards-grid .credit-card:nth-child(2) { animation-delay: 40ms; }
+    .cards-grid .credit-card:nth-child(3) { animation-delay: 80ms; }
+    .cards-grid .credit-card:nth-child(4) { animation-delay: 120ms; }
+    .cards-grid .credit-card:nth-child(5) { animation-delay: 160ms; }
+    .cards-grid .credit-card:nth-child(n+6) { animation-delay: 200ms; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .credit-card {
+        animation: none;
+        opacity: 1;
+        transform: none;
+      }
     }
 
     .credit-card-header {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    /* ── Arte do cartão (visual por banco/emissor) ── */
+    .card-visual {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1.586 / 1;
+      border-radius: 16px;
+      padding: 16px 18px;
       display: flex;
-      align-items: flex-start;
+      flex-direction: column;
       justify-content: space-between;
-      margin-bottom: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .12);
+    }
+
+    .card-visual::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 85% -10%, rgba(255, 255, 255, .22), transparent 55%);
+      pointer-events: none;
+    }
+
+    .card-visual-accent {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 8px;
+      opacity: .9;
+    }
+
+    .card-visual-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-visual-chip {
+      opacity: .95;
+    }
+
+    .card-visual-wave {
+      opacity: .85;
+    }
+
+    .card-visual-digits {
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      opacity: .92;
+    }
+
+    .card-visual-name {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .credit-card-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin: 10px 0 4px;
     }
 
     .credit-card-name {
@@ -1857,6 +2093,10 @@
     .credit-card-actions {
       display: flex;
       gap: 4px;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 2;
     }
 
     .credit-card-edit {
@@ -1864,20 +2104,25 @@
       height: 28px;
       border-radius: 7px;
       border: 1px solid transparent;
-      background: transparent;
+      background: rgba(0, 0, 0, .28);
+      backdrop-filter: blur(4px);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      color: var(--text-dim);
-      transition: all 0.13s;
+      color: rgba(255, 255, 255, .85);
+      transition: background-color 130ms ease, border-color 130ms ease, color 130ms ease, transform 130ms var(--ease-out);
       flex-shrink: 0;
     }
 
+    .credit-card-edit:active {
+      transform: scale(0.92);
+    }
+
     .credit-card-edit:hover {
-      background: rgba(184, 188, 196, 0.12);
-      border-color: rgba(184, 188, 196, 0.30);
-      color: var(--blue);
+      background: rgba(0, 0, 0, .45);
+      border-color: rgba(255, 255, 255, .25);
+      color: #fff;
     }
 
     .credit-card-edit svg {
@@ -1890,19 +2135,24 @@
       height: 28px;
       border-radius: 7px;
       border: 1px solid transparent;
-      background: transparent;
+      background: rgba(0, 0, 0, .28);
+      backdrop-filter: blur(4px);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      color: var(--text-dim);
-      transition: all 0.13s;
+      color: rgba(255, 255, 255, .85);
+      transition: background-color 130ms ease, border-color 130ms ease, color 130ms ease, transform 130ms var(--ease-out);
       flex-shrink: 0;
     }
 
+    .credit-card-delete:active {
+      transform: scale(0.92);
+    }
+
     .credit-card-delete:hover {
-      background: rgba(161, 161, 170, 0.12);
-      border-color: rgba(161, 161, 170, 0.30);
+      background: rgba(0, 0, 0, .45);
+      border-color: rgba(255, 122, 122, .5);
       color: var(--danger);
     }
 
@@ -2022,7 +2272,7 @@
       border-radius: 10px;
       border: 2px solid var(--border);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: border-color 150ms ease, background-color 150ms ease;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -2039,7 +2289,7 @@
       border-radius: 50%;
       border: 2px solid var(--border);
       flex-shrink: 0;
-      transition: all 0.15s;
+      transition: border-color 150ms ease, background-color 150ms ease;
     }
 
     .detail-type-card.selected .radio-dot {
@@ -2162,11 +2412,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.15s;
+      transition: border-color 150ms ease, background-color 150ms ease;
     }
 
     .custom-select-option.selected .opt-check {
-      border-color: var(--btn-primary-bg);
+      border-color: var(--accent);
       background: var(--btn-primary-bg);
     }
 
@@ -2225,19 +2475,20 @@
 
     /* ── TEMA CLARO ── */
     [data-theme="light"] {
-      --bg: #f4f4f6;
+      --bg: #f2f1f9;
       --surface: #ffffff;
-      --surface2: #edeef1;
-      --border: #e1e2e6;
-      --accent: #52525b;
-      --accent-dim: rgba(82, 82, 91, 0.10);
+      --surface2: #f2f0f9;
+      --border: #e4e1f2;
+      --accent: #6C5CE7;
+      --accent-2: #A855F7;
+      --accent-dim: rgba(108, 92, 231, 0.10);
       --text: #18181b;
-      --text-muted: #52525b;
+      --text-muted: #55555f;
       --text-dim: #8b8b93;
-      --btn-primary-bg: #26262a;
-      --btn-primary-bg-hover: #3f3f46;
-      --btn-primary-text: #fafafa;
-      --hover-strong: #e7e7ec;
+      --btn-primary-bg: linear-gradient(135deg, #6C5CE7, #A855F7);
+      --btn-primary-bg-hover: linear-gradient(135deg, #7C6CFB, #B96CFB);
+      --btn-primary-text: #ffffff;
+      --hover-strong: #e9e6f5;
 
       --success: #16a34a;
       --warning: #b45309;
@@ -2313,6 +2564,27 @@
     }
 
     .kpi-card,
+    .credit-card,
+    .detail-card,
+    .panel-card,
+    .entrada-card {
+      transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms ease;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+
+      .kpi-card:hover,
+      .credit-card:hover,
+      .detail-card:hover,
+      .panel-card:hover,
+      .entrada-card:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+        box-shadow: 0 16px 36px rgba(0, 0, 0, .16);
+      }
+    }
+
+    .kpi-card,
     .table-wrap,
     .modal,
     .credit-card,
@@ -2327,7 +2599,7 @@
     }
 
     .btn:active {
-      transform: translateY(1px);
+      transform: scale(0.97);
     }
 
     .app-status {
@@ -2354,10 +2626,18 @@
     @media (min-width: 1024px) {
       .sidebar {
         transform: none;
+        top: var(--gap);
+        left: var(--gap);
+        bottom: var(--gap);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, .28);
+        overflow: hidden;
+        border: 1px solid var(--border);
       }
 
       .main {
-        margin-left: var(--sidebar-w);
+        margin-left: calc(var(--sidebar-w) + var(--gap) * 2);
+        padding-right: var(--gap);
       }
 
       .hamburger-btn {
@@ -2369,11 +2649,14 @@
       }
 
       .content {
-        padding: 32px 34px;
+        padding: 26px 22px 34px 30px;
       }
 
       .topbar {
         padding-left: 22px;
+        margin-top: var(--gap);
+        border-radius: var(--radius-md);
+        top: var(--gap);
       }
     }
 
@@ -2387,7 +2670,8 @@
       padding: 28px;
       margin-bottom: 22px;
       background:
-        radial-gradient(circle at top right, var(--radial-tint-2), transparent 34%),
+        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent-2) 30%, transparent), transparent 55%),
+        radial-gradient(circle at 0% 100%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 50%),
         linear-gradient(135deg, var(--sheen-strong), var(--sheen-weak)),
         var(--surface);
       box-shadow: var(--shadow-soft);
@@ -2404,6 +2688,19 @@
       height: 310px;
       border: 1px solid var(--hero-ring);
       border-radius: 999px;
+    }
+
+    .dashboard-hero::before {
+      content: '';
+      position: absolute;
+      left: -60px;
+      top: -90px;
+      width: 220px;
+      height: 220px;
+      background: color-mix(in srgb, var(--accent) 40%, transparent);
+      filter: blur(60px);
+      border-radius: 999px;
+      pointer-events: none;
     }
 
     .hero-copy,
@@ -2477,7 +2774,7 @@
 
     .panel-card {
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: var(--radius-md);
       padding: 18px;
       min-height: 154px;
     }
@@ -2718,6 +3015,10 @@
         grid-template-columns: repeat(3, 1fr);
       }
 
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
       .dashboard-grid {
         grid-template-columns: 1fr;
       }
@@ -2853,20 +3154,19 @@
       </a>
 
       <div class="nav-section-label">Operação</div>
-      <a class="nav-item" onclick="toggleSubmenu('produtos-sub')">
+      <a class="nav-item" id="nav-estoque" onclick="navigate('estoque'); closeSidebar()">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-width="1.8" stroke-linecap="round" d="M21 8l-9-5-9 5m18 0v8l-9 5-9-5V8m9 5v8M3 8l9 5" />
         </svg>
-        Produtos
-        <svg class="nav-expand" id="produtos-expand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
+        Estoque
       </a>
-      <div class="nav-sub" id="produtos-sub" style="display:none">
-        <a class="nav-item" id="nav-estoque" onclick="navigate('estoque'); closeSidebar()">Estoque</a>
-        <a class="nav-item" id="nav-anunciados" onclick="navigate('anunciados'); closeSidebar()">Itens Anunciados</a>
-      </div>
-
+      <a class="nav-item" id="nav-anunciados" onclick="navigate('anunciados'); closeSidebar()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+            d="M11 5.9V19a1.7 1.7 0 01-3.3.5L5.6 13.6M17.8 13a3 3 0 000-6M5.3 13.6A4 4 0 016.9 6h1.8c4 0 7.5-1.2 9-3v14c-1.5-1.8-5-3-9-3H6.9a4 4 0 01-1.6-.4z" />
+        </svg>
+        Itens Anunciados
+      </a>
       <a class="nav-item" id="nav-movimentacoes" onclick="navigate('movimentacoes'); closeSidebar()">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
@@ -2874,24 +3174,28 @@
         </svg>
         Movimentações
       </a>
-
-      <a class="nav-item" id="nav-compras" onclick="toggleSubmenu('compras-sub')">
+      <a class="nav-item" id="nav-compras-registro"
+        onclick="navigate('compras'); switchSubpage('compras'); closeSidebar()">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
             d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
-        Compras
-        <svg class="nav-expand" id="compras-expand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
+        Registro de Compras
       </a>
-      <div class="nav-sub" id="compras-sub" style="display:none">
-        <a class="nav-item" id="nav-compras-registro"
-          onclick="navigate('compras'); switchSubpage('compras'); closeSidebar()">Registro de Compras</a>
-        <a class="nav-item" id="nav-financeiro"
-          onclick="navigate('compras'); switchSubpage('financeiro'); closeSidebar()">Financeiro</a>
-        <a class="nav-item" id="nav-contas" onclick="navigate('contas'); closeSidebar()">Contas de Compra</a>
-      </div>
+      <a class="nav-item" id="nav-financeiro"
+        onclick="navigate('compras'); switchSubpage('financeiro'); closeSidebar()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+        </svg>
+        Financeiro
+      </a>
+      <a class="nav-item" id="nav-contas" onclick="navigate('contas'); closeSidebar()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+            d="M12 12a4 4 0 100-8 4 4 0 000 8zm-7 8c0-3.3 3.1-6 7-6s7 2.7 7 6" />
+        </svg>
+        Contas de Compra
+      </a>
     </nav>
   </aside>
 
@@ -2927,12 +3231,6 @@
           </svg>
         </button>
         <div class="avatar">K.B</div>
-        <button class="quick-search-btn" onclick="fazerLogout()" title="Sair da conta">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 5v1a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          <span>Sair</span>
-        </button>
       </div>
     </div>
 
@@ -2960,32 +3258,32 @@
 
         <div class="dash-kpi premium-kpi">
           <div class="kpi-card success">
-            <div class="kpi-label">Total de SKUs</div>
+            <div class="kpi-label">Total de SKUs<span class="kpi-icon success"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8l-9-5-9 5m18 0v8l-9 5-9-5V8m9 5v8M3 8l9 5"/></svg></span></div>
             <div class="kpi-value" id="dash-skus">0</div>
             <div class="kpi-sub">produtos cadastrados</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Unidades em Estoque</div>
+            <div class="kpi-label">Unidades em Estoque<span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span></div>
             <div class="kpi-value" id="dash-units">0</div>
             <div class="kpi-sub">unidades totais</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Valor de Custo Total</div>
+            <div class="kpi-label">Valor de Custo Total<span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span></div>
             <div class="kpi-value" id="dash-cost">R$ 0,00</div>
             <div class="kpi-sub">capital em estoque</div>
           </div>
           <div class="kpi-card critical">
-            <div class="kpi-label">Estoque Zerado</div>
+            <div class="kpi-label">Estoque Zerado<span class="kpi-icon critical"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></span></div>
             <div class="kpi-value" id="dash-zero">0</div>
             <div class="kpi-sub">produtos sem saldo</div>
           </div>
           <div class="kpi-card warning">
-            <div class="kpi-label">Estoque Baixo</div>
+            <div class="kpi-label">Estoque Baixo<span class="kpi-icon warning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0l-3-3m3 3l-3 3M3 7l6 6 4-4 8 8"/></svg></span></div>
             <div class="kpi-value" id="dash-low">0</div>
             <div class="kpi-sub">abaixo do mínimo</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Saídas no mês</div>
+            <div class="kpi-label">Saídas no mês<span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7l10 10M17 7v10H7"/></svg></span></div>
             <div class="kpi-value" id="dash-month-out">0</div>
             <div class="kpi-sub">unidades movimentadas</div>
           </div>
@@ -3097,7 +3395,7 @@
           </div>
         </div>
 
-        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi-grid">
           <div class="kpi-card">
             <div class="kpi-label">Total de Logs</div>
             <div class="kpi-value" id="logs-total">0</div>
@@ -3246,7 +3544,7 @@
             </button>
           </div>
 
-          <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+          <div class="kpi-grid">
             <div class="kpi-card success">
               <div class="kpi-label">Total Receitas</div>
               <div class="kpi-value" id="fin-receitas" style="color:var(--green)">R$ 0,00</div>
@@ -3479,7 +3777,7 @@
           <button class="detail-tab" id="tab-mov-saida" onclick="selectMovTab('saida')">Saídas</button>
         </div>
 
-        <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="kpi-grid kpi-grid-3">
           <div class="kpi-card">
             <div class="kpi-label" id="movs-kpi-produtos-label">Produtos com Entrada</div>
             <div class="kpi-value" id="movs-kpi-produtos">0</div>
@@ -4593,12 +4891,12 @@
     function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
     const BREADCRUMBS = {
       dashboard: ['Dashboard', 'Início'],
-      estoque: ['Produtos', 'Estoque'],
-      anunciados: ['Produtos', 'Itens Anunciados'],
+      estoque: ['Operação', 'Estoque'],
+      anunciados: ['Operação', 'Itens Anunciados'],
       movimentacoes: ['Operação', 'Movimentações'],
-      'produto-detalhe': ['Produtos', 'Detalhe do Produto'],
+      'produto-detalhe': ['Estoque', 'Detalhe do Produto'],
       logs: ['Sistema', 'Logs de Auditoria'],
-      compras: ['Operação', 'Compras'],
+      compras: ['Operação', 'Registro de Compras'],
     };
     function setBreadcrumb(page) {
       const bc = BREADCRUMBS[page] || ['', page];
@@ -4606,6 +4904,7 @@
       if (el) el.innerHTML = `<span>${bc[0]}</span><span class="sep">›</span><span class="current">${bc[1]}</span>`;
     }
     function navigate(page) {
+      salvarScrollPaginaAtual();
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
       document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.remove('active'));
       setBreadcrumb(page);
@@ -4616,20 +4915,95 @@
       else if (page === 'produto-detalhe') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-produto-detalhe').classList.add('active'); renderProductDetail(); }
       else if (page === 'logs') { document.getElementById('nav-logs').classList.add('active'); document.getElementById('page-logs').classList.add('active'); refreshLogs({ silent: true }); }
       else if (page === 'compras') {
-        document.getElementById('nav-compras').classList.add('active');
         document.getElementById('page-compras').classList.add('active');
-        abrirSubmenuCompras();
         switchSubpage(currentSubpage);
       }
       else if (page === 'contas') {
         document.getElementById('page-contas').classList.add('active');
-        abrirSubmenuCompras();
         atualizarBreadcrumbCompras('contas');
         highlightComprasSubnav('contas');
         renderContas();
       }
       salvarUltimaPagina(page);
+      restaurarScrollPagina('page-' + page);
     }
+
+    // ─── PERSISTÊNCIA DE SCROLL (mantém a rolagem ao trocar/voltar de tela) ─────
+    function salvarScrollPaginaAtual() {
+      const atual = document.querySelector('[id^="page-"].active');
+      if (!atual) return;
+      try { sessionStorage.setItem('scroll:' + atual.id, String(window.scrollY || 0)); } catch (e) { /* ignora */ }
+    }
+    function restaurarScrollPagina(pageId) {
+      let y = 0;
+      try { y = parseInt(sessionStorage.getItem('scroll:' + pageId) || '0', 10) || 0; } catch (e) { y = 0; }
+      // aguarda o próximo frame para o DOM da página já estar renderizado/medido
+      requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, y)));
+    }
+
+    // ─── PERSISTÊNCIA DE FILTROS/BUSCA (sobrevive a navegação e a F5) ───────────
+    const FILTER_TEXT_FIELDS = ['search-input', 'filter-qty', 'compras-search', 'contas-search', 'movs-search', 'log-search'];
+    const FILTER_PLAIN_SELECT_FIELDS = ['log-action-filter', 'log-table-filter'];
+    const FILTER_CUSTOM_SELECT_FIELDS = ['filter-super', 'filter-anunciado', 'filter-mes-mov', 'filter-ano-mov'];
+
+    function setCustomSelectValue(csId, value) {
+      if (value === undefined || value === null || value === '') return;
+      const wrap = document.getElementById(csId);
+      const realId = csId.slice(3);
+      const real = document.getElementById(realId);
+      if (!wrap || !real) return;
+      const valueStr = String(value);
+      let opt = Array.from(wrap.querySelectorAll('.custom-select-option')).find(o => o.dataset.value === valueStr);
+      if (!opt && real.options.length === 0) {
+        // dropdown dinâmico (ex: filtro de ano/mês) ainda não foi montado —
+        // injeta uma option temporária só para o valor "pegar" até o próximo render
+        const o = document.createElement('option');
+        o.value = valueStr; o.textContent = valueStr;
+        real.appendChild(o);
+      }
+      if (opt) {
+        pickCustomSelect(csId, valueStr, opt.textContent.trim(), opt);
+      } else {
+        real.value = valueStr;
+      }
+    }
+
+    function saveFilterState() {
+      try {
+        const state = {};
+        [...FILTER_TEXT_FIELDS, ...FILTER_PLAIN_SELECT_FIELDS, ...FILTER_CUSTOM_SELECT_FIELDS].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) state[id] = el.value;
+        });
+        localStorage.setItem('filterState', JSON.stringify(state));
+      } catch (e) { /* ignora */ }
+    }
+
+    function restoreFilterState() {
+      let state = null;
+      try { state = JSON.parse(localStorage.getItem('filterState') || 'null'); } catch (e) { state = null; }
+      if (!state) return;
+      FILTER_TEXT_FIELDS.forEach(id => {
+        if (!state[id]) return;
+        const el = document.getElementById(id);
+        if (el) el.value = state[id];
+      });
+      FILTER_PLAIN_SELECT_FIELDS.forEach(id => {
+        if (!state[id]) return;
+        const el = document.getElementById(id);
+        if (el) el.value = state[id];
+      });
+      FILTER_CUSTOM_SELECT_FIELDS.forEach(id => {
+        if (state[id]) setCustomSelectValue('cs-' + id, state[id]);
+      });
+    }
+
+    document.addEventListener('input', e => {
+      if (e.target && e.target.id && FILTER_TEXT_FIELDS.includes(e.target.id)) saveFilterState();
+    });
+    document.addEventListener('change', e => {
+      if (e.target && e.target.id && (FILTER_PLAIN_SELECT_FIELDS.includes(e.target.id) || FILTER_CUSTOM_SELECT_FIELDS.includes(e.target.id))) saveFilterState();
+    });
 
     // ─── PERSISTÊNCIA DE PÁGINA (mantém a página ao atualizar/F5) ───────────────
     function salvarUltimaPagina(page, extra) {
@@ -4741,26 +5115,14 @@
       const input = document.getElementById('quick-search-input');
       if (input) input.addEventListener('input', () => renderQuickSearchResults(input.value));
     });
-    function toggleSubmenu(id) {
-      const sub = document.getElementById(id); const expId = id === 'produtos-sub' ? 'produtos-expand' : 'compras-expand';
-      const exp = document.getElementById(expId); const open = sub.style.display === 'block';
-      sub.style.display = open ? 'none' : 'block'; if (exp) exp.classList.toggle('open', !open);
-    }
-    function abrirSubmenuCompras() {
-      const sub = document.getElementById('compras-sub');
-      const exp = document.getElementById('compras-expand');
-      if (sub) sub.style.display = 'block';
-      if (exp) exp.classList.add('open');
-    }
     function atualizarBreadcrumbCompras(name) {
       const el = document.getElementById('breadcrumb');
       if (!el) return;
       const labels = { financeiro: 'Financeiro', contas: 'Contas de Compra', compras: 'Registro de Compras' };
       const atual = labels[name] || 'Registro de Compras';
-      el.innerHTML = `<span>Compras</span><span class="sep">›</span><span class="current">${atual}</span>`;
+      el.innerHTML = `<span>Operação</span><span class="sep">›</span><span class="current">${atual}</span>`;
     }
     function highlightComprasSubnav(name) {
-      document.getElementById('nav-compras').classList.add('active');
       const navRegistro = document.getElementById('nav-compras-registro');
       const navFinanceiro = document.getElementById('nav-financeiro');
       const navContas = document.getElementById('nav-contas');
@@ -4770,7 +5132,6 @@
     }
     function switchSubpage(name) {
       currentSubpage = name;
-      abrirSubmenuCompras();
       atualizarBreadcrumbCompras(name);
       highlightComprasSubnav(name);
       document.getElementById('subpage-compras').classList.toggle('active', name === 'compras');
@@ -6150,6 +6511,52 @@
       }).join('');
     }
 
+    // ─── IDENTIDADE VISUAL DOS CARTÕES (por nome do banco/emissor) ───────────────
+    const BANK_BRANDS = [
+      { keys: ['inter'], id: 'inter', label: 'Inter', gradient: 'linear-gradient(135deg,#FF7A00,#FF9E45)', fg: '#1a0d00' },
+      { keys: ['xp'], id: 'xp', label: 'XP', gradient: 'linear-gradient(135deg,#1a1a1a,#3a3a3a)', fg: '#ffffff' },
+      { keys: ['nubank', 'nu bank', 'nu '], id: 'nubank', label: 'Nubank', gradient: 'linear-gradient(135deg,#8A05BE,#B23CE0)', fg: '#ffffff' },
+      { keys: ['itau', 'itaú'], id: 'itau', label: 'Itaú', gradient: 'linear-gradient(135deg,#003399,#0047CC)', fg: '#ffffff', accent: '#FF7900' },
+      { keys: ['bradesco'], id: 'bradesco', label: 'Bradesco', gradient: 'linear-gradient(135deg,#CC092F,#8F0620)', fg: '#ffffff' },
+      { keys: ['santander'], id: 'santander', label: 'Santander', gradient: 'linear-gradient(135deg,#EC0000,#A10000)', fg: '#ffffff' },
+      { keys: ['banco do brasil', ' bb', 'bb '], id: 'bb', label: 'Banco do Brasil', gradient: 'linear-gradient(135deg,#F7D117,#FFB612)', fg: '#00338d' },
+      { keys: ['caixa'], id: 'caixa', label: 'Caixa', gradient: 'linear-gradient(135deg,#0033A0,#0057D9)', fg: '#ffffff', accent: '#F39200' },
+      { keys: ['c6'], id: 'c6', label: 'C6 Bank', gradient: 'linear-gradient(135deg,#1c1c1e,#4a4a4d)', fg: '#ffffff' },
+      { keys: ['neon'], id: 'neon', label: 'Neon', gradient: 'linear-gradient(135deg,#00E0C6,#00AEEF)', fg: '#00263a' },
+      { keys: ['picpay'], id: 'picpay', label: 'PicPay', gradient: 'linear-gradient(135deg,#21C25E,#0FAE4A)', fg: '#ffffff' },
+      { keys: ['btg'], id: 'btg', label: 'BTG Pactual', gradient: 'linear-gradient(135deg,#0b0b0c,#2b2b2e)', fg: '#ffffff', accent: '#D4AF6A' },
+      { keys: ['mercado pago', 'mercadopago'], id: 'mp', label: 'Mercado Pago', gradient: 'linear-gradient(135deg,#00AEEF,#0090C7)', fg: '#00263a' },
+      { keys: ['nomad'], id: 'nomad', label: 'Nomad', gradient: 'linear-gradient(135deg,#0b0b0c,#26262a)', fg: '#ffffff', accent: '#D4AF37' },
+      { keys: ['will bank', 'willbank'], id: 'will', label: 'Will Bank', gradient: 'linear-gradient(135deg,#6C2BD9,#9B5CF6)', fg: '#ffffff' },
+      { keys: ['pagbank', 'pagseguro'], id: 'pagbank', label: 'PagBank', gradient: 'linear-gradient(135deg,#FFC700,#FF9500)', fg: '#1a1400' },
+      { keys: ['sicoob'], id: 'sicoob', label: 'Sicoob', gradient: 'linear-gradient(135deg,#00A651,#046A38)', fg: '#ffffff' },
+      { keys: ['sicredi'], id: 'sicredi', label: 'Sicredi', gradient: 'linear-gradient(135deg,#6CB33F,#4C8C2B)', fg: '#ffffff' },
+      { keys: ['original'], id: 'original', label: 'Original', gradient: 'linear-gradient(135deg,#00A99D,#00786F)', fg: '#ffffff' },
+    ];
+    function getBankBrand(nome) {
+      const n = String(nome || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      for (const b of BANK_BRANDS) {
+        if (b.keys.some(k => n.includes(k))) return b;
+      }
+      return { id: 'default', label: nome || 'Cartão', gradient: 'linear-gradient(135deg,#3a3d46,#1c1e24)', fg: '#ffffff' };
+    }
+    function cardVisualHtml(nome, digitos) {
+      const brand = getBankBrand(nome);
+      const accentStripe = brand.accent ? `<div class="card-visual-accent" style="background:${brand.accent}"></div>` : '';
+      return `
+      <div class="card-visual" style="background:${brand.gradient}; color:${brand.fg}">
+        ${accentStripe}
+        <div class="card-visual-top">
+          <div class="card-visual-chip" aria-hidden="true">
+            <svg viewBox="0 0 32 24" width="30" height="22"><rect x="1" y="1" width="30" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".85"/><line x1="1" y1="8" x2="31" y2="8" stroke="currentColor" stroke-width="1" opacity=".6"/><line x1="1" y1="16" x2="31" y2="16" stroke="currentColor" stroke-width="1" opacity=".6"/><line x1="11" y1="1" x2="11" y2="23" stroke="currentColor" stroke-width="1" opacity=".6"/><line x1="21" y1="1" x2="21" y2="23" stroke="currentColor" stroke-width="1" opacity=".6"/></svg>
+          </div>
+          <svg class="card-visual-wave" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8.5 8.5a5 5 0 010 7M5 5a9.4 9.4 0 010 14M12 12a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".9"/></svg>
+        </div>
+        <div class="card-visual-digits">•••• •••• •••• ${escapeHtml(digitos || '0000')}</div>
+        <div class="card-visual-name">${escapeHtml(brand.label)}</div>
+      </div>`;
+    }
+
     // ─── CARTÕES E GERENCIADOR DE FATURAS ────────────────────────────────────────
     function openCartaoModal() { editCartaoId = null; document.getElementById('modal-cartao-title').textContent = 'Adicionar Cartão'; document.getElementById('btn-save-cartao').textContent = 'Salvar Cartão';['cartao-nome', 'cartao-digitos', 'cartao-limite'].forEach(id => { document.getElementById(id).value = ''; }); openModal('cartao'); }
     function openEditCartaoModal(id) { const cartao = loadCartoes().find(c => String(c.id) === String(id)); if (!cartao) return; editCartaoId = id; document.getElementById('modal-cartao-title').textContent = 'Editar Cartão'; document.getElementById('btn-save-cartao').textContent = 'Salvar Alterações'; document.getElementById('cartao-nome').value = cartao.nome; document.getElementById('cartao-digitos').value = cartao.digitos; document.getElementById('cartao-limite').value = formatMoneyInputValue(cartao.limite); openModal('cartao'); }
@@ -6298,18 +6705,20 @@
         const fPendente = faturas.find(f => f.pendente > 0);
         const proxFaturaHtml = fPendente ? `<span style="color:var(--text);font-weight:700">${fmt(fPendente.pendente)} <span style="font-size:10px;color:var(--text-muted);font-weight:500">(${formatMesAno(fPendente.mes)})</span></span>` : `<span style="color:var(--text-dim)">Nenhuma</span>`;
 
+        const brandDetected = getBankBrand(c.nome);
+        const showLabel = brandDetected.id === 'default' || String(c.nome || '').trim().toLowerCase() !== brandDetected.label.toLowerCase();
+        const labelHtml = showLabel ? `<div class="credit-card-label">${escapeHtml(c.nome)}</div>` : '';
+
         return `
     <div class="credit-card">
       <div class="credit-card-header">
-        <div>
-          <div class="credit-card-name">${c.nome}</div>
-          <div class="credit-card-digits">•••• •••• •••• ${c.digitos}</div>
-        </div>
+        ${cardVisualHtml(c.nome, c.digitos)}
         <div class="credit-card-actions">
           <button class="credit-card-edit" onclick="openEditCartaoModal('${c.id}')" title="Editar cartão"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>
           <button class="credit-card-delete" onclick="deleteCartao('${c.id}')" title="Remover cartão"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
         </div>
       </div>
+      ${labelHtml}
 
       <div class="credit-card-values">
         <div><div class="credit-card-val-label">Limite Total</div><div class="credit-card-val">${fmt(limite)}</div></div>
@@ -6833,6 +7242,7 @@
         handleAsyncError(err, 'Não foi possível iniciar o sistema.');
       }
 
+      restoreFilterState();
       restaurarUltimaPagina();
     }
 
@@ -6847,24 +7257,11 @@
         await setupSupabaseClient();
         assertSupabase();
 
-        db.auth.onAuthStateChange((event, session) => {
-          if (session) {
-            bootAppDepoisDoLogin();
-          } else {
-            appBooted = false;
-            mostrarTelaLogin();
-          }
-        });
-
-        const { data } = await db.auth.getSession();
-        if (data && data.session) {
-          await bootAppDepoisDoLogin();
-        } else {
-          mostrarTelaLogin();
-        }
+        // Login desabilitado (autenticação desativada no Supabase): inicia
+        // o app diretamente, sem checar sessão nem exibir a tela de login.
+        await bootAppDepoisDoLogin();
       } catch (err) {
         handleAsyncError(err, 'Não foi possível iniciar o sistema.');
-        mostrarTelaLogin();
       }
     }
 
