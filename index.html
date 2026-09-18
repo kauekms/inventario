@@ -2070,6 +2070,180 @@
       letter-spacing: -0.2px;
     }
 
+    .card-visual-bottom-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    /* ── Cartões temáticos (arte dedicada por banco/emissor) ── */
+    .card-visual[data-theme="btg"] {
+      background:
+        radial-gradient(120% 160% at 88% 6%, rgba(130, 180, 225, .32), transparent 48%),
+        linear-gradient(135deg, #0d2740 0%, #071a2c 55%, #051220 100%);
+      color: #eaf1fb;
+    }
+    .card-visual[data-theme="amazon"] {
+      background: linear-gradient(150deg, #2b3a4d 0%, #232f3e 55%, #1a232f 100%);
+      color: #ffffff;
+    }
+    .card-visual[data-theme="nubank"] {
+      background: linear-gradient(135deg, #9d2fd6 0%, #7c1fae 55%, #4a0f77 100%);
+      color: #ffffff;
+    }
+    .card-visual[data-theme="inter"] {
+      background: #0c0c0d;
+      color: #ffffff;
+    }
+    .card-visual[data-theme="xp"] {
+      background: #0a0a0a;
+      color: #ffffff;
+    }
+
+    .card-visual-dots {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, .16) 1px, transparent 1.4px);
+      background-size: 7px 7px;
+      -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, .95), transparent 68%);
+      mask-image: linear-gradient(to top, rgba(0, 0, 0, .95), transparent 68%);
+      pointer-events: none;
+    }
+
+    /* Bandeiras de rede (Mastercard / Visa) — forma genérica, sem logotipo oficial */
+    .brand-network {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .brand-mc-circles {
+      position: relative;
+      width: 34px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .brand-mc-circles span {
+      position: absolute;
+      top: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+    }
+
+    .brand-mc-circles span.c1 { left: 0; background: #EB6D2E; }
+    .brand-mc-circles span.c2 { left: 12px; background: #D9D9D9; opacity: .88; }
+
+    .brand-mc-circles.mono span.c1 { background: rgba(255, 255, 255, .35); }
+    .brand-mc-circles.mono span.c2 { background: rgba(255, 255, 255, .78); }
+
+    .brand-mc-circles.color span.c1 { background: #EB001B; }
+    .brand-mc-circles.color span.c2 { background: #F79E1B; opacity: .92; }
+
+    .brand-mc-circles.outline span {
+      background: transparent;
+      border: 1.4px solid rgba(255, 255, 255, .85);
+    }
+
+    .brand-mc-text {
+      font-size: 8px;
+      letter-spacing: .03em;
+      opacity: .85;
+      text-transform: lowercase;
+    }
+
+    .brand-visa {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-style: italic;
+      font-weight: 800;
+      font-size: 21px;
+      letter-spacing: -0.5px;
+      line-height: 1;
+      color: #eceff3;
+    }
+
+    .brand-visa-sub {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-style: normal;
+      font-weight: 400;
+      font-size: 9px;
+      letter-spacing: .1em;
+      color: #d5d8dd;
+      margin-top: 1px;
+    }
+
+    .brand-btg {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-btg-ring {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 1px solid rgba(210, 225, 245, .55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #cfe0f5;
+    }
+
+    .brand-btg-ring svg { width: 16px; height: 16px; }
+
+    .brand-btg-text {
+      font-size: 15px;
+      font-weight: 800;
+      color: #cfe0f5;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-btg-text span {
+      font-weight: 400;
+      color: #aebfd8;
+      margin-right: 2px;
+    }
+
+    .brand-amazon {
+      font-size: 16px;
+      font-weight: 700;
+      color: #4fb3ff;
+      letter-spacing: -0.2px;
+    }
+
+    .brand-amazon span { font-weight: 800; }
+
+    .brand-nu {
+      font-size: 25px;
+      font-weight: 800;
+      color: #ffffff;
+      opacity: .95;
+      line-height: 1;
+    }
+
+    .brand-inter {
+      font-size: 18px;
+      font-weight: 800;
+      font-style: italic;
+      color: #ffffff;
+      letter-spacing: -0.4px;
+    }
+
+    .brand-xp-box {
+      background: #ffffff;
+      color: #0a0a0a;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 5px 9px;
+      border-radius: 4px;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+
     .credit-card-label {
       font-size: 12px;
       color: var(--text-muted);
@@ -6467,9 +6641,10 @@
 
     // ─── IDENTIDADE VISUAL DOS CARTÕES (por nome do banco/emissor) ───────────────
     const BANK_BRANDS = [
-      { keys: ['inter'], id: 'inter', label: 'Inter', gradient: 'linear-gradient(135deg,#FF7A00,#FF9E45)', fg: '#1a0d00' },
-      { keys: ['xp'], id: 'xp', label: 'XP', gradient: 'linear-gradient(135deg,#1a1a1a,#3a3a3a)', fg: '#ffffff' },
-      { keys: ['nubank', 'nu bank', 'nu '], id: 'nubank', label: 'Nubank', gradient: 'linear-gradient(135deg,#8A05BE,#B23CE0)', fg: '#ffffff' },
+      { keys: ['inter'], id: 'inter', label: 'Inter', gradient: 'linear-gradient(135deg,#FF7A00,#FF9E45)', fg: '#1a0d00', themed: true },
+      { keys: ['xp'], id: 'xp', label: 'XP', gradient: 'linear-gradient(135deg,#1a1a1a,#3a3a3a)', fg: '#ffffff', themed: true },
+      { keys: ['nubank', 'nu bank', 'nu '], id: 'nubank', label: 'Nubank', gradient: 'linear-gradient(135deg,#8A05BE,#B23CE0)', fg: '#ffffff', themed: true },
+      { keys: ['amazon'], id: 'amazon', label: 'Amazon Prime', gradient: 'linear-gradient(135deg,#232f3e,#37475a)', fg: '#ffffff', themed: true },
       { keys: ['itau', 'itaú'], id: 'itau', label: 'Itaú', gradient: 'linear-gradient(135deg,#003399,#0047CC)', fg: '#ffffff', accent: '#FF7900' },
       { keys: ['bradesco'], id: 'bradesco', label: 'Bradesco', gradient: 'linear-gradient(135deg,#CC092F,#8F0620)', fg: '#ffffff' },
       { keys: ['santander'], id: 'santander', label: 'Santander', gradient: 'linear-gradient(135deg,#EC0000,#A10000)', fg: '#ffffff' },
@@ -6478,7 +6653,7 @@
       { keys: ['c6'], id: 'c6', label: 'C6 Bank', gradient: 'linear-gradient(135deg,#1c1c1e,#4a4a4d)', fg: '#ffffff' },
       { keys: ['neon'], id: 'neon', label: 'Neon', gradient: 'linear-gradient(135deg,#00E0C6,#00AEEF)', fg: '#00263a' },
       { keys: ['picpay'], id: 'picpay', label: 'PicPay', gradient: 'linear-gradient(135deg,#21C25E,#0FAE4A)', fg: '#ffffff' },
-      { keys: ['btg'], id: 'btg', label: 'BTG Pactual', gradient: 'linear-gradient(135deg,#0b0b0c,#2b2b2e)', fg: '#ffffff', accent: '#D4AF6A' },
+      { keys: ['btg'], id: 'btg', label: 'BTG Pactual', gradient: 'linear-gradient(135deg,#0b0b0c,#2b2b2e)', fg: '#ffffff', accent: '#D4AF6A', themed: true },
       { keys: ['mercado pago', 'mercadopago'], id: 'mp', label: 'Mercado Pago', gradient: 'linear-gradient(135deg,#00AEEF,#0090C7)', fg: '#00263a' },
       { keys: ['nomad'], id: 'nomad', label: 'Nomad', gradient: 'linear-gradient(135deg,#0b0b0c,#26262a)', fg: '#ffffff', accent: '#D4AF37' },
       { keys: ['will bank', 'willbank'], id: 'will', label: 'Will Bank', gradient: 'linear-gradient(135deg,#6C2BD9,#9B5CF6)', fg: '#ffffff' },
@@ -6494,17 +6669,114 @@
       }
       return { id: 'default', label: nome || 'Cartão', gradient: 'linear-gradient(135deg,#3a3d46,#1c1e24)', fg: '#ffffff' };
     }
+    function chipSvg(size) {
+      const s = size || { w: 30, h: 22 };
+      return `<svg viewBox="0 0 32 24" width="${s.w}" height="${s.h}" aria-hidden="true"><rect x="1" y="1" width="30" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".85"/><line x1="1" y1="8" x2="31" y2="8" stroke="currentColor" stroke-width="1" opacity=".6"/><line x1="1" y1="16" x2="31" y2="16" stroke="currentColor" stroke-width="1" opacity=".6"/><line x1="11" y1="1" x2="11" y2="23" stroke="currentColor" stroke-width="1" opacity=".6"/><line x1="21" y1="1" x2="21" y2="23" stroke="currentColor" stroke-width="1" opacity=".6"/></svg>`;
+    }
+    function waveSvg() {
+      return `<svg class="card-visual-wave" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8.5 8.5a5 5 0 010 7M5 5a9.4 9.4 0 010 14M12 12a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".9"/></svg>`;
+    }
+    function mastercardMark(variant) {
+      const cls = variant ? ` ${variant}` : '';
+      return `<div class="brand-network"><div class="brand-mc-circles${cls}"><span class="c1"></span><span class="c2"></span></div>${variant === 'outline' ? '<div class="brand-mc-text">mastercard</div>' : ''}</div>`;
+    }
+    function visaInfiniteMark() {
+      return `<div class="brand-visa">VISA<div class="brand-visa-sub">Infinite</div></div>`;
+    }
+
+    // Arte temática dedicada para os bancos/emissores com identidade visual própria
+    function themedCardHtml(brand, digitos) {
+      const dig = `•••• •••• •••• ${escapeHtml(digitos || '0000')}`;
+      switch (brand.id) {
+        case 'btg':
+          return `
+      <div class="card-visual" data-theme="btg">
+        <div class="card-visual-top">
+          <div class="card-visual-chip">${chipSvg()}</div>
+          ${waveSvg()}
+        </div>
+        <div class="brand-btg">
+          <div class="brand-btg-ring">${waveSvg()}</div>
+          <div class="brand-btg-text"><span>btg</span>pactual</div>
+        </div>
+        <div class="card-visual-bottom-row">
+          <div class="card-visual-digits">${dig}</div>
+          ${mastercardMark('mono')}
+        </div>
+      </div>`;
+        case 'amazon':
+          return `
+      <div class="card-visual" data-theme="amazon">
+        <div class="card-visual-top">
+          <div class="card-visual-chip">${chipSvg()}</div>
+          <div class="brand-amazon"><span>amazon</span> prime</div>
+        </div>
+        <div class="card-visual-digits">${dig}</div>
+        <div class="card-visual-bottom-row" style="justify-content:flex-end">
+          ${mastercardMark('color')}
+        </div>
+      </div>`;
+        case 'nubank':
+          return `
+      <div class="card-visual" data-theme="nubank">
+        <div class="card-visual-top">
+          <div class="card-visual-chip" style="color:#F2C879">${chipSvg()}</div>
+          ${waveSvg()}
+        </div>
+        <div class="card-visual-digits">${dig}</div>
+        <div class="card-visual-bottom-row">
+          ${mastercardMark('outline')}
+          <div class="brand-nu">nu</div>
+        </div>
+      </div>`;
+        case 'inter':
+          return `
+      <div class="card-visual" data-theme="inter">
+        <div class="card-visual-dots"></div>
+        <div class="card-visual-top">
+          <div class="brand-inter">inter</div>
+          ${mastercardMark('color')}
+        </div>
+        <div class="card-visual-bottom-row">
+          <div class="card-visual-chip">${chipSvg()}</div>
+          <div class="card-visual-digits">${dig}</div>
+        </div>
+      </div>`;
+        case 'xp':
+          return `
+      <div class="card-visual" data-theme="xp">
+        <div class="card-visual-top">
+          ${visaInfiniteMark()}
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="card-visual-chip">${chipSvg()}</div>
+            ${waveSvg()}
+          </div>
+        </div>
+        <div class="card-visual-digits" style="align-self:flex-end">${dig}</div>
+        <div class="card-visual-bottom-row" style="justify-content:flex-start">
+          <div class="brand-xp-box">XP</div>
+        </div>
+      </div>`;
+        default:
+          return null;
+      }
+    }
+
     function cardVisualHtml(nome, digitos) {
       const brand = getBankBrand(nome);
+      if (brand.themed) {
+        const themed = themedCardHtml(brand, digitos);
+        if (themed) return themed;
+      }
       const accentStripe = brand.accent ? `<div class="card-visual-accent" style="background:${brand.accent}"></div>` : '';
       return `
       <div class="card-visual" style="background:${brand.gradient}; color:${brand.fg}">
         ${accentStripe}
         <div class="card-visual-top">
           <div class="card-visual-chip" aria-hidden="true">
-            <svg viewBox="0 0 32 24" width="30" height="22"><rect x="1" y="1" width="30" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".85"/><line x1="1" y1="8" x2="31" y2="8" stroke="currentColor" stroke-width="1" opacity=".6"/><line x1="1" y1="16" x2="31" y2="16" stroke="currentColor" stroke-width="1" opacity=".6"/><line x1="11" y1="1" x2="11" y2="23" stroke="currentColor" stroke-width="1" opacity=".6"/><line x1="21" y1="1" x2="21" y2="23" stroke="currentColor" stroke-width="1" opacity=".6"/></svg>
+            ${chipSvg()}
           </div>
-          <svg class="card-visual-wave" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8.5 8.5a5 5 0 010 7M5 5a9.4 9.4 0 010 14M12 12a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".9"/></svg>
+          ${waveSvg()}
         </div>
         <div class="card-visual-digits">•••• •••• •••• ${escapeHtml(digitos || '0000')}</div>
         <div class="card-visual-name">${escapeHtml(brand.label)}</div>
