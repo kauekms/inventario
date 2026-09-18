@@ -4904,10 +4904,10 @@
       if (el) el.innerHTML = `<span>${bc[0]}</span><span class="sep">›</span><span class="current">${bc[1]}</span>`;
     }
     function navigate(page) {
-      salvarScrollPaginaAtual();
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
       document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.remove('active'));
       setBreadcrumb(page);
+      resetFieldsFor(page);
       if (page === 'dashboard') { document.getElementById('nav-dashboard').classList.add('active'); document.getElementById('page-dashboard').classList.add('active'); renderDashboard(); }
       else if (page === 'estoque') { document.getElementById('nav-estoque').classList.add('active'); document.getElementById('page-estoque').classList.add('active'); renderKpis(); renderTable(); }
       else if (page === 'anunciados') { document.getElementById('nav-anunciados').classList.add('active'); document.getElementById('page-anunciados').classList.add('active'); renderAnunciados(); }
@@ -4925,85 +4925,39 @@
         renderContas();
       }
       salvarUltimaPagina(page);
-      restaurarScrollPagina('page-' + page);
+      window.scrollTo(0, 0);
     }
 
-    // ─── PERSISTÊNCIA DE SCROLL (mantém a rolagem ao trocar/voltar de tela) ─────
-    function salvarScrollPaginaAtual() {
-      const atual = document.querySelector('[id^="page-"].active');
-      if (!atual) return;
-      try { sessionStorage.setItem('scroll:' + atual.id, String(window.scrollY || 0)); } catch (e) { /* ignora */ }
-    }
-    function restaurarScrollPagina(pageId) {
-      let y = 0;
-      try { y = parseInt(sessionStorage.getItem('scroll:' + pageId) || '0', 10) || 0; } catch (e) { y = 0; }
-      // aguarda o próximo frame para o DOM da página já estar renderizado/medido
-      requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, y)));
-    }
-
-    // ─── PERSISTÊNCIA DE FILTROS/BUSCA (sobrevive a navegação e a F5) ───────────
-    const FILTER_TEXT_FIELDS = ['search-input', 'filter-qty', 'compras-search', 'contas-search', 'movs-search', 'log-search'];
-    const FILTER_PLAIN_SELECT_FIELDS = ['log-action-filter', 'log-table-filter'];
-    const FILTER_CUSTOM_SELECT_FIELDS = ['filter-super', 'filter-anunciado', 'filter-mes-mov', 'filter-ano-mov'];
-
-    function setCustomSelectValue(csId, value) {
-      if (value === undefined || value === null || value === '') return;
+    // ─── RESET DE BUSCA/FILTROS (sempre limpos ao entrar na tela — sem persistir) ─
+    function resetCustomSelectToDefault(csId, defaultValue, defaultLabel) {
       const wrap = document.getElementById(csId);
-      const realId = csId.slice(3);
-      const real = document.getElementById(realId);
-      if (!wrap || !real) return;
-      const valueStr = String(value);
-      let opt = Array.from(wrap.querySelectorAll('.custom-select-option')).find(o => o.dataset.value === valueStr);
-      if (!opt && real.options.length === 0) {
-        // dropdown dinâmico (ex: filtro de ano/mês) ainda não foi montado —
-        // injeta uma option temporária só para o valor "pegar" até o próximo render
-        const o = document.createElement('option');
-        o.value = valueStr; o.textContent = valueStr;
-        real.appendChild(o);
+      const real = document.getElementById(csId.slice(3));
+      const labelEl = document.getElementById(csId + '-label');
+      if (real) real.value = defaultValue;
+      if (labelEl) labelEl.textContent = defaultLabel;
+      if (wrap) wrap.querySelectorAll('.custom-select-option').forEach(o => o.classList.toggle('selected', o.dataset.value === defaultValue));
+    }
+    function resetFieldsFor(page) {
+      const clear = id => { const el = document.getElementById(id); if (el) el.value = ''; };
+      if (page === 'estoque') {
+        clear('search-input');
+        clear('filter-qty');
+        resetCustomSelectToDefault('cs-filter-super', 'ambos', 'Ambos');
+        resetCustomSelectToDefault('cs-filter-anunciado', 'todos', 'Todos');
+      } else if (page === 'compras') {
+        clear('compras-search');
+      } else if (page === 'contas') {
+        clear('contas-search');
+      } else if (page === 'movimentacoes') {
+        clear('movs-search');
+        resetCustomSelectToDefault('cs-filter-mes-mov', 'todos', 'Todos os meses');
+        resetCustomSelectToDefault('cs-filter-ano-mov', 'todos', 'Todos os anos');
+      } else if (page === 'logs') {
+        clear('log-search');
+        const af = document.getElementById('log-action-filter'); if (af) af.value = 'todos';
+        const tf = document.getElementById('log-table-filter'); if (tf) tf.value = 'todos';
       }
-      if (opt) {
-        pickCustomSelect(csId, valueStr, opt.textContent.trim(), opt);
-      } else {
-        real.value = valueStr;
-      }
     }
-
-    function saveFilterState() {
-      try {
-        const state = {};
-        [...FILTER_TEXT_FIELDS, ...FILTER_PLAIN_SELECT_FIELDS, ...FILTER_CUSTOM_SELECT_FIELDS].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) state[id] = el.value;
-        });
-        localStorage.setItem('filterState', JSON.stringify(state));
-      } catch (e) { /* ignora */ }
-    }
-
-    function restoreFilterState() {
-      let state = null;
-      try { state = JSON.parse(localStorage.getItem('filterState') || 'null'); } catch (e) { state = null; }
-      if (!state) return;
-      FILTER_TEXT_FIELDS.forEach(id => {
-        if (!state[id]) return;
-        const el = document.getElementById(id);
-        if (el) el.value = state[id];
-      });
-      FILTER_PLAIN_SELECT_FIELDS.forEach(id => {
-        if (!state[id]) return;
-        const el = document.getElementById(id);
-        if (el) el.value = state[id];
-      });
-      FILTER_CUSTOM_SELECT_FIELDS.forEach(id => {
-        if (state[id]) setCustomSelectValue('cs-' + id, state[id]);
-      });
-    }
-
-    document.addEventListener('input', e => {
-      if (e.target && e.target.id && FILTER_TEXT_FIELDS.includes(e.target.id)) saveFilterState();
-    });
-    document.addEventListener('change', e => {
-      if (e.target && e.target.id && (FILTER_PLAIN_SELECT_FIELDS.includes(e.target.id) || FILTER_CUSTOM_SELECT_FIELDS.includes(e.target.id))) saveFilterState();
-    });
 
     // ─── PERSISTÊNCIA DE PÁGINA (mantém a página ao atualizar/F5) ───────────────
     function salvarUltimaPagina(page, extra) {
@@ -7242,7 +7196,6 @@
         handleAsyncError(err, 'Não foi possível iniciar o sistema.');
       }
 
-      restoreFilterState();
       restaurarUltimaPagina();
     }
 
